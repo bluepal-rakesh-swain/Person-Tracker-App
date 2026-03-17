@@ -2,26 +2,37 @@ package com.financetracker.service;
 
 import com.financetracker.dto.request.TransactionRequest;
 import com.financetracker.dto.response.TransactionResponse;
+import com.financetracker.entity.Budget;
 import com.financetracker.entity.Category;
 import com.financetracker.entity.Transaction;
+import com.financetracker.entity.TransactionType;
 import com.financetracker.entity.User;
 import com.financetracker.exception.ResourceNotFoundException;
+import com.financetracker.repository.BudgetRepository;
 import com.financetracker.repository.CategoryRepository;
 import com.financetracker.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.YearMonth;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class TransactionService {
 
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
+    private final BudgetRepository budgetRepository;
+    private final EmailService emailService;
 
     @Transactional
     public TransactionResponse create(User user, TransactionRequest request) {
@@ -37,7 +48,55 @@ public class TransactionService {
             .type(request.getType())
             .build();
 
-        return toResponse(transactionRepository.save(tx), category);
+        TransactionResponse response = toResponse(transactionRepository.save(tx), category);
+
+        // Check budget alert after saving (only for EXPENSE transactions)
+        if (TransactionType.EXPENSE == request.getType()) {
+            checkAndSendBudgetAlert(user, category, request.getDate());
+        }
+
+        return response;
+    }
+
+    private void checkAndSendBudgetAlert(User user, Category category, LocalDate txDate) {
+        try {
+            String monthYear = YearMonth.from(txDate).format(DateTimeFormatter.ofPattern("yyyy-MM"));
+            Optional<Budget> budgetOpt = budgetRepository
+                .findByUserIdAndCategoryIdAndMonthYear(user.getId(), category.getId(), monthYear);
+
+            if (budgetOpt.isEmpty()) return;
+
+            Budget budget = budgetOpt.get();
+            YearMonth ym = YearMonth.parse(monthYear);
+            LocalDate start = ym.atDay(1);
+            LocalDate end = ym.atEndOfMonth();
+
+            List<Object[]> spentRows = transactionRepository.spentByCategoryInMonth(
+                user.getId(), start, end, TransactionType.EXPENSE);
+            Map<Long, Long> spentMap = spentRows.stream()
+                .collect(Collectors.toMap(r -> (Long) r[0], r -> (Long) r[1]));
+
+            long spent = spentMap.getOrDefault(category.getId(), 0L);
+            long limit = budget.getLimitAmount();
+            if (limit <= 0) return;
+
+            double usagePercent = (spent * 100.0) / limit;
+
+            // Send alert when crossing 80% threshold
+            if (usagePercent >= 80.0) {
+                emailService.sendBudgetAlertEmail(
+                    user.getEmail(),
+                    user.getFullName(),
+                    category.getName(),
+                    usagePercent,
+                    spent,
+                    limit,
+                    monthYear
+                );
+            }
+        } catch (Exception e) {
+            log.error("Budget alert check failed for user {}: {}", user.getEmail(), e.getMessage());
+        }
     }
 
     public List<TransactionResponse> getFiltered(User user, LocalDate start, LocalDate end, Long categoryId) {

@@ -62,4 +62,28 @@ public class EmailService {
             throw new RuntimeException("Failed to send reset email. Please try again later.");
         }
     }
+
+    public void sendBudgetAlertEmail(String toEmail, String userName, String categoryName,
+                                     double usagePercent, long spent, long limit, String monthYear) {
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setFrom(fromEmail);
+            message.setTo(toEmail);
+            message.setSubject("⚠️ Budget Alert — " + categoryName + " reached " + (int) usagePercent + "%");
+            message.setText(
+                "Hello " + userName + ",\n\n" +
+                "This is a budget alert for your Finance Tracker account.\n\n" +
+                "Your \"" + categoryName + "\" budget for " + monthYear + " has reached " +
+                String.format("%.1f", usagePercent) + "% of the limit.\n\n" +
+                "  Spent  : ₹" + String.format("%.2f", spent / 100.0) + "\n" +
+                "  Budget : ₹" + String.format("%.2f", limit / 100.0) + "\n\n" +
+                "Please review your spending to stay within budget.\n\n" +
+                "— Personal Finance Tracker Team"
+            );
+            mailSender.send(message);
+            log.info("Budget alert email sent to {} for category {}", toEmail, categoryName);
+        } catch (Exception e) {
+            log.error("Failed to send budget alert email to {}: {}", toEmail, e.getMessage());
+        }
+    }
 }

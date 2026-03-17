@@ -6,7 +6,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Plus, X, Loader2, ArrowUpCircle, ArrowDownCircle, Filter, Upload, Download } from 'lucide-react'
-import { transactionApi, categoryApi } from '@/lib/api'
+import { transactionApi, categoryApi, csvApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney, formatDate } from '@/lib/utils'
 import { useToast } from '@/components/Toaster'
@@ -28,6 +28,21 @@ export default function Transactions() {
   const qc = useQueryClient()
   const { show } = useToast()
   const [showModal, setShowModal] = useState(false)
+
+  const handleExport = async () => {
+    try {
+      const res = await csvApi.export()
+      const url = URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'transactions.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+      show('Transactions exported successfully')
+    } catch {
+      show('Export failed', 'error')
+    }
+  }
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [filterCat, setFilterCat] = useState<number | undefined>()
@@ -62,6 +77,22 @@ export default function Transactions() {
     defaultValues: { type: 'EXPENSE', date: new Date().toISOString().split('T')[0] },
   })
   const selectedType = watch('type')
+  const watchedAmount = watch('amount')
+
+  // Total income and expense from all transactions
+  const totalIncome   = allTransactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
+  const totalExpenses = allTransactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
+
+  const handleCreate = (data: FormData) => {
+    if (data.type === 'EXPENSE') {
+      const newExpenseAmount = Math.round(data.amount * 100)
+      if (totalExpenses + newExpenseAmount > totalIncome) {
+        show('Expense exceeds your total income. Transaction not allowed.', 'error')
+        return
+      }
+    }
+    createMutation.mutate(data)
+  }
 
   const createMutation = useMutation({
     mutationFn: (data: FormData) => transactionApi.create({
@@ -99,7 +130,7 @@ export default function Transactions() {
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <Upload size={15} /> Import CSV
               </button>
-              <button onClick={() => navigate('/export')}
+              <button onClick={handleExport}
                 className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
                 <Download size={15} /> Export
               </button>
@@ -195,7 +226,7 @@ export default function Transactions() {
                   <X size={18} />
                 </button>
               </div>
-              <form onSubmit={handleSubmit(d => createMutation.mutate(d))} className="space-y-4">
+              <form onSubmit={handleSubmit(handleCreate)} className="space-y-4">
                 {saveError && (
                   <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm">
                     {saveError}
