@@ -6,6 +6,7 @@ import { createSyncStoragePersister } from '@tanstack/query-sync-storage-persist
 import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
+import { ToastProvider } from '@/components/Toaster'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
 import ForgotPassword from '@/pages/ForgotPassword'
@@ -61,6 +62,7 @@ export default function App() {
       }}
     >
       <AuthProvider>
+        <ToastProvider>
         <BrowserRouter>
           <Routes>
             {/* Public */}
@@ -87,6 +89,7 @@ export default function App() {
             <Route path="*" element={<RoleRedirect />} />
           </Routes>
         </BrowserRouter>
+        </ToastProvider>
       </AuthProvider>
     </PersistQueryClientProvider>
   )

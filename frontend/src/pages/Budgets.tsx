@@ -9,6 +9,7 @@ import { budgetApi, categoryApi } from '@/lib/api'
 import { formatMoney, currentMonthYear, formatMonthYear } from '@/lib/utils'
 import type { Budget, Category } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/components/Toaster'
 
 const schema = z.object({
   categoryId: z.coerce.number().min(1, 'Select a category'),
@@ -97,6 +98,7 @@ function BudgetCard({ budget, currency }: { budget: Budget; currency: string }) 
 export default function Budgets() {
   const qc = useQueryClient()
   const { user } = useAuth()
+  const { show } = useToast()
   const currency = user?.currency || 'INR'
   const isAdmin = user?.role === 'ADMIN'
   const [showModal, setShowModal] = useState(false)
@@ -143,6 +145,7 @@ export default function Budgets() {
       qc.invalidateQueries({ queryKey: ['budgets'] })
       setShowModal(false)
       reset({ monthYear: selectedMonth })
+      show('Budget saved successfully')
     },
   })
 

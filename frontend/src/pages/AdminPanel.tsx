@@ -4,6 +4,7 @@ import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, AlertCircle, Download, Upload, FileText } from 'lucide-react'
 import { adminApi } from '@/lib/api'
+import { useToast } from '@/components/Toaster'
 
 interface AdminUser {
   id: number
@@ -41,6 +42,7 @@ export default function AdminPanel() {
   const tab = (searchParams.get('tab') as Tab) || 'users'
   const setTab = (t: Tab) => setSearchParams({ tab: t })
   const qc = useQueryClient()
+  const { show } = useToast()
 
   const { data: usersRes, isLoading: usersLoading } = useQuery({
     queryKey: ['admin-users'],
@@ -67,7 +69,10 @@ export default function AdminPanel() {
   const toggleEnabled = useMutation({
     mutationFn: ({ id, enabled }: { id: number; enabled: boolean }) =>
       adminApi.setEnabled(id, enabled),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      show(vars.enabled ? 'User enabled' : 'User disabled', vars.enabled ? 'success' : 'warning')
+    },
   })
 
   const changeRole = useMutation({
@@ -78,12 +83,14 @@ export default function AdminPanel() {
 
   const deleteUser = useMutation({
     mutationFn: (id: number) => adminApi.deleteUser(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      show('User deleted', 'warning')
+    },
   })
 
   const importFileRef = useRef<HTMLInputElement>(null)
   const [importingUserId, setImportingUserId] = useState<number | null>(null)
-  const [importStatus, setImportStatus] = useState<string | null>(null)
 
   const handleExport = async (u: AdminUser) => {
     const res = await adminApi.exportUserCsv(u.id)
@@ -97,7 +104,6 @@ export default function AdminPanel() {
 
   const handleImportClick = (userId: number) => {
     setImportingUserId(userId)
-    setImportStatus(null)
     importFileRef.current?.click()
   }
 
@@ -108,9 +114,9 @@ export default function AdminPanel() {
     try {
       const defaultMapping = { date: 'date', desc: 'description', amount: 'amount', defaultCategoryId: null }
       await adminApi.importUserCsv(importingUserId, file, defaultMapping)
-      setImportStatus('Import successful')
+      show('CSV imported successfully')
     } catch {
-      setImportStatus('Import failed')
+      show('CSV import failed', 'error')
     } finally {
       setImportingUserId(null)
     }
@@ -164,17 +170,6 @@ export default function AdminPanel() {
       {/* Hidden file input for CSV import */}
       <input ref={importFileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
 
-      {/* Import status toast */}
-      {importStatus && (
-        <div className={`text-sm px-4 py-2 rounded-lg w-fit ${
-          importStatus.includes('successful')
-            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
-            : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'
-        }`}>
-          {importStatus}
-        </div>
-      )}
-
 
       {/* Users Tab */}
       {tab === 'users' && (
@@ -221,7 +216,7 @@ export default function AdminPanel() {
                             {u.enabled ? <ShieldOff size={14} /> : <ShieldCheck size={14} />}
                           </button>
                           <button
-                            onClick={() => { if (confirm(`Delete ${u.email}?`)) deleteUser.mutate(u.id) }}
+                            onClick={() => { if (confirm(`Delete ${u.email}? This cannot be undone.`)) deleteUser.mutate(u.id) }}
                             className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10 text-gray-400 hover:text-red-500 transition-colors">
                             <Trash2 size={14} />
                           </button>

@@ -9,6 +9,7 @@ import { Plus, X, Loader2, ArrowUpCircle, ArrowDownCircle, Filter, Upload, Downl
 import { transactionApi, categoryApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
 import { formatMoney, formatDate } from '@/lib/utils'
+import { useToast } from '@/components/Toaster'
 import type { Transaction, Category } from '@/types'
 
 const schema = z.object({
@@ -25,6 +26,7 @@ export default function Transactions() {
   const isAdmin = user?.role === 'ADMIN'
   const navigate = useNavigate()
   const qc = useQueryClient()
+  const { show } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
@@ -65,7 +67,7 @@ export default function Transactions() {
     mutationFn: (data: FormData) => transactionApi.create({
       ...data,
       description: data.description ?? '',
-      amount: Math.round(data.amount * 100), // convert to paise
+      amount: Math.round(data.amount * 100),
     }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
@@ -76,6 +78,7 @@ export default function Transactions() {
       setShowModal(false)
       setSaveError('')
       reset()
+      show('Transaction saved successfully')
     },
     onError: (e: any) => {
       setSaveError(e.response?.data?.message || 'Failed to save transaction')

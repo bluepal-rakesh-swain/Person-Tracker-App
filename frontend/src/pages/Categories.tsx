@@ -8,6 +8,7 @@ import { Plus, X, Pencil, Trash2, Loader2 } from 'lucide-react'
 import { categoryApi } from '@/lib/api'
 import type { Category } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
+import { useToast } from '@/components/Toaster'
 
 const COLORS = ['#10b981','#6366f1','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16']
 const ICONS  = ['briefcase','shopping-cart','home','car','utensils','heart','book','music','plane','gift','zap','star']
@@ -22,6 +23,7 @@ type FormData = z.infer<typeof schema>
 
 export default function Categories() {
   const qc = useQueryClient()
+  const { show } = useToast()
   const [showModal, setShowModal] = useState(false)
   const [editing, setEditing]     = useState<Category | null>(null)
   const [apiError, setApiError]   = useState('')
@@ -61,6 +63,7 @@ export default function Categories() {
       qc.invalidateQueries({ queryKey: ['categories'] })
       setShowModal(false)
       setApiError('')
+      show(editing ? 'Category updated successfully' : 'Category created successfully')
     },
     onError: (e: any) => {
       setApiError(e?.response?.data?.message || e?.response?.data?.error || 'Failed to save category')
@@ -69,7 +72,10 @@ export default function Categories() {
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => categoryApi.delete(id),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['categories'] }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['categories'] })
+      show('Category deleted', 'warning')
+    },
   })
 
   const income  = categories.filter(c => c.type === 'INCOME')
@@ -163,7 +169,9 @@ export default function Categories() {
                             className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
                             <Pencil size={12} />
                           </button>
-                          <button onClick={() => deleteMutation.mutate(c.id)}
+                          <button onClick={() => {
+                              if (confirm(`Delete "${c.name}"? This cannot be undone.`)) deleteMutation.mutate(c.id)
+                            }}
                             disabled={deleteMutation.isPending}
                             className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-500/20 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors">
                             <Trash2 size={12} />
