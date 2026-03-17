@@ -287,3 +287,515 @@ export default function Dashboard() {
     </div>
   )
 }
+
+
+
+// import { useQuery } from '@tanstack/react-query'
+// import { dashboardApi, transactionApi } from '@/lib/api'
+// import { useAuth } from '@/contexts/AuthContext'
+// import { useNavigate } from 'react-router-dom'
+// import { motion } from 'framer-motion'
+// import { formatMoney, currentMonthYear, currentYear, formatMonthYear, formatDate } from '@/lib/utils'
+// import {
+//   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+//   ResponsiveContainer, PieChart, Pie, Cell,
+// } from 'recharts'
+// import type { DashboardSummary, MonthlyChartData, CategoryChartData, Transaction } from '@/types'
+// import { TrendingUp, ArrowUpRight, ArrowDownRight, Activity, Target } from 'lucide-react'
+
+// const PIE_COLORS = ['#f97316', '#000000', '#475569', '#94a3b8', '#fb923c', '#0f172a']
+
+// function StatCard({ label, value, sub, bg, currency, icon: Icon }: {
+//   label: string; value: number | string; sub?: string; bg: string; currency?: string; icon?: any
+// }) {
+//   const display = typeof value === 'number' && currency
+//     ? formatMoney(value, currency)
+//     : String(value)
+//   return (
+//     <motion.div 
+//       whileHover={{ y: -5 }}
+//       className={`rounded-[2rem] p-8 text-white relative overflow-hidden ${bg} shadow-2xl border border-white/10`}
+//     >
+//       <div className="relative z-10">
+//         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-3">{label}</p>
+//         <p className="text-3xl font-[1000] tracking-tighter leading-none mb-4">{display}</p>
+//         {sub && (
+//           <div className="flex items-center gap-2 py-1 px-3 rounded-full bg-black/20 w-fit border border-white/5">
+//             <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+//             <p className="text-[10px] font-bold uppercase tracking-widest text-white/90">{sub}</p>
+//           </div>
+//         )}
+//       </div>
+//       {Icon && (
+//         <div className="absolute right-6 top-8 text-white/10 group-hover:text-white/20 transition-colors">
+//           <Icon size={64} strokeWidth={3} />
+//         </div>
+//       )}
+//       {/* Cinematic Glass Effect */}
+//       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-[50px] rounded-full -mr-16 -mt-16" />
+//     </motion.div>
+//   )
+// }
+
+// const CustomTooltip = ({ active, payload, currency }: any) => {
+//   if (!active || !payload?.length) return null
+//   return (
+//     <div className="bg-black border border-white/10 rounded-2xl p-4 shadow-2xl">
+//       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">
+//         {payload[0].payload.month || payload[0].name}
+//       </p>
+//       <p className="text-lg font-black text-white">{formatMoney(payload[0].value, currency)}</p>
+//     </div>
+//   )
+// }
+
+// export default function Dashboard() {
+//   const { user } = useAuth()
+//   const navigate = useNavigate()
+//   const currency = user?.currency || 'INR'
+//   const monthYear = currentMonthYear()
+//   const year = currentYear()
+
+//   const { data: summaryRes, isLoading: loadingSummary } = useQuery({
+//     queryKey: ['dashboard-summary'],
+//     queryFn: () => dashboardApi.getSummary(),
+//   })
+  
+//   const { data: monthlyRes } = useQuery({
+//     queryKey: ['dashboard-monthly', year],
+//     queryFn: () => dashboardApi.getMonthlyChart(year),
+//   })
+
+//   const { data: categoryRes } = useQuery({
+//     queryKey: ['dashboard-categories', monthYear],
+//     queryFn: () => dashboardApi.getCategoryChart(monthYear),
+//   })
+
+//   const { data: txRes } = useQuery({
+//     queryKey: ['transactions-recent'],
+//     queryFn: () => transactionApi.getAll(),
+//   })
+
+//   const summary: DashboardSummary | undefined = summaryRes?.data?.data
+//   const monthlyData: MonthlyChartData[] = monthlyRes?.data?.data || []
+//   const categoryData: CategoryChartData[] = categoryRes?.data?.data || []
+//   const allTx: Transaction[] = txRes?.data?.data || []
+//   const recentTx = allTx.slice(0, 5)
+
+//   const totalForPie = categoryData.reduce((s, d) => s + d.total, 0)
+//   const pieData = categoryData.map((d, i) => ({
+//     name: d.categoryName,
+//     value: d.total,
+//     color: d.color || PIE_COLORS[i % PIE_COLORS.length],
+//   }))
+
+//   const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+//   const monthlyMap = Object.fromEntries(monthlyData.map(d => [d.month.slice(5), d.expense]))
+//   const barData = MONTH_NAMES.map((name, i) => {
+//     const key = String(i + 1).padStart(2, '0')
+//     return { month: name, Expense: monthlyMap[key] ?? 0 }
+//   })
+
+//   const savingsRate = summary && summary.totalIncome > 0
+//     ? Math.round((summary.netBalance / summary.totalIncome) * 100)
+//     : 0
+
+//   return (
+//     <div className="space-y-8 max-w-[1600px] mx-auto">
+      
+//       {/* ── HEADER ── */}
+//       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+//         <div>
+//           <h1 className="text-4xl font-[1000] text-black tracking-tighter uppercase leading-none">
+//             Control <span className="text-orange-500">Room</span>
+//           </h1>
+//           <p className="text-xs font-black text-slate-400 uppercase tracking-[0.4em] mt-2">Operational Analytics • {year}</p>
+//         </div>
+//         <button 
+//           onClick={() => navigate('/transactions')}
+//           className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95"
+//         >
+//           + Initialize Transaction
+//         </button>
+//       </div>
+
+//       {/* ── STATS ── */}
+//       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+//         {loadingSummary ? (
+//           [1,2,3,4].map(i => <div key={i} className="h-40 rounded-[2rem] animate-pulse bg-gray-100" />)
+//         ) : (
+//           <>
+//             <StatCard label="Inflow" value={summary?.totalIncome ?? 0} currency={currency} sub="Revenue" bg="bg-black" icon={ArrowUpRight} />
+//             <StatCard label="Outflow" value={summary?.totalExpenses ?? 0} currency={currency} sub="Expenditure" bg="bg-orange-500" icon={ArrowDownRight} />
+//             <StatCard label="Net Asset" value={summary?.netBalance ?? 0} currency={currency} sub="Liquidity" bg="bg-slate-900" icon={Activity} />
+//             <StatCard label="Efficiency" value={`${savingsRate}%`} sub="Savings Rate" bg="bg-orange-600" icon={Target} />
+//           </>
+//         )}
+//       </div>
+
+//       {/* ── CHARTS ── */}
+//       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+//         {/* Main Spending Bar Chart */}
+//         <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
+//           <div className="flex items-center justify-between mb-8">
+//             <h2 className="text-[12px] font-black text-black uppercase tracking-[0.3em]">Capital Distribution</h2>
+//             <div className="flex items-center gap-2">
+//               <span className="w-2 h-2 rounded-full bg-orange-500" />
+//               <span className="text-[10px] font-black uppercase text-slate-400">Monthly Expense</span>
+//             </div>
+//           </div>
+//           <ResponsiveContainer width="100%" height={300}>
+//             <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+//               <CartesianGrid strokeDasharray="8 8" stroke="#f1f5f9" vertical={false} />
+//               <XAxis dataKey="month" tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} dy={10} />
+//               <YAxis tick={{ fontSize: 10, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} tickFormatter={v => `₹${v/1000}k`} />
+//               <Tooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip currency={currency} />} />
+//               <Bar dataKey="Expense" fill="#000000" radius={[12, 12, 4, 4]} barSize={32} />
+//             </BarChart>
+//           </ResponsiveContainer>
+//         </div>
+
+//         {/* Category Donut */}
+//         <div className="bg-black rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden">
+//           <h2 className="text-[12px] font-black text-white/50 uppercase tracking-[0.3em] mb-8">Cluster Analysis</h2>
+//           <div className="relative h-[250px]">
+//              <ResponsiveContainer width="100%" height="100%">
+//                 <PieChart>
+//                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={8} dataKey="value" strokeWidth={0}>
+//                     {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+//                   </Pie>
+//                   <Tooltip content={<CustomTooltip currency={currency} />} />
+//                 </PieChart>
+//              </ResponsiveContainer>
+//              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+//                 <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest">Total</p>
+//                 <p className="text-xl font-black text-white">{formatMoney(totalForPie, currency)}</p>
+//              </div>
+//           </div>
+//           <div className="mt-6 space-y-3">
+//              {pieData.slice(0, 3).map((d) => (
+//                 <div key={d.name} className="flex items-center justify-between">
+//                    <div className="flex items-center gap-3">
+//                       <div className="w-2 h-2 rounded-full" style={{ backgroundColor: d.color }} />
+//                       <span className="text-[10px] font-black text-white/70 uppercase tracking-wider">{d.name}</span>
+//                    </div>
+//                    <span className="text-[10px] font-mono font-bold text-white">{formatMoney(d.value, currency)}</span>
+//                 </div>
+//              ))}
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ── RECENT ACTIVITY TABLE ── */}
+//       <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.04)] border border-gray-100">
+//         <div className="flex items-center justify-between mb-8">
+//           <h2 className="text-[12px] font-black text-black uppercase tracking-[0.3em]">Latest Protocols</h2>
+//           <button onClick={() => navigate('/transactions')} className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:underline">View Ledger</button>
+//         </div>
+//         <div className="overflow-x-auto">
+//           <table className="w-full">
+//             <thead>
+//               <tr className="border-b border-gray-50">
+//                 <th className="pb-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Description</th>
+//                 <th className="pb-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest">Cluster</th>
+//                 <th className="pb-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Timestamp</th>
+//                 <th className="pb-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest">Amount</th>
+//               </tr>
+//             </thead>
+//             <tbody className="divide-y divide-gray-50">
+//               {recentTx.map(tx => (
+//                 <tr key={tx.id} className="group hover:bg-gray-50 transition-colors">
+//                   <td className="py-5">
+//                     <div className="flex items-center gap-4">
+//                       <div className={cn(
+//                         "w-10 h-10 rounded-xl flex items-center justify-center font-black text-xs",
+//                         tx.type === 'INCOME' ? "bg-orange-500/10 text-orange-500" : "bg-black text-white"
+//                       )}>
+//                         {tx.type === 'INCOME' ? 'IN' : 'OUT'}
+//                       </div>
+//                       <span className="text-[13px] font-black text-black uppercase tracking-tight">{tx.description || tx.categoryName}</span>
+//                     </div>
+//                   </td>
+//                   <td className="py-5 text-[11px] font-bold text-slate-500 uppercase">{tx.categoryName}</td>
+//                   <td className="py-5 text-right text-[11px] font-bold text-slate-400 uppercase">{formatDate(tx.date)}</td>
+//                   <td className={cn(
+//                     "py-5 text-right font-mono font-black text-sm",
+//                     tx.type === 'INCOME' ? "text-orange-500" : "text-black"
+//                   )}>
+//                     {tx.type === 'INCOME' ? '+' : '-'}{formatMoney(tx.amount, currency)}
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
+//     </div>
+//   )
+// }
+
+
+
+// import { useQuery } from '@tanstack/react-query'
+// import { dashboardApi, transactionApi } from '@/lib/api'
+// import { useAuth } from '@/contexts/AuthContext'
+// import { useNavigate } from 'react-router-dom'
+// import { motion } from 'framer-motion'
+// import { formatMoney, currentMonthYear, currentYear, formatMonthYear, formatDate } from '@/lib/utils'
+// import {
+//   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip,
+//   ResponsiveContainer, PieChart, Pie, Cell,
+// } from 'recharts'
+// import type { DashboardSummary, MonthlyChartData, CategoryChartData, Transaction } from '@/types'
+// import { TrendingUp, ArrowUpRight, ArrowDownRight, Activity, Target } from 'lucide-react'
+// import { clsx, type ClassValue } from 'clsx'
+// import { twMerge } from 'tailwind-merge'
+
+// /** * Utility to merge tailwind classes (Fixes "Cannot find name 'cn'")
+//  * Note: Requires 'npm install clsx tailwind-merge'
+//  */
+// function cn(...inputs: ClassValue[]) {
+//   return twMerge(clsx(inputs))
+// }
+
+// const PIE_COLORS = ['#f97316', '#000000', '#475569', '#94a3b8', '#fb923c', '#0f172a']
+
+// function StatCard({ label, value, sub, bg, currency, icon: Icon }: {
+//   label: string; value: number | string; sub?: string; bg: string; currency?: string; icon?: any
+// }) {
+//   const display = typeof value === 'number' && currency
+//     ? formatMoney(value, currency)
+//     : String(value)
+//   return (
+//     <motion.div 
+//       whileHover={{ y: -5 }}
+//       className={cn(
+//         "rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl border border-white/10 group",
+//         bg
+//       )}
+//     >
+//       <div className="relative z-10">
+//         <p className="text-[10px] font-black uppercase tracking-[0.2em] text-white/70 mb-3">{label}</p>
+//         <p className="text-3xl font-[1000] tracking-tighter leading-none mb-4">{display}</p>
+//         {sub && (
+//           <div className="flex items-center gap-2 py-1 px-3 rounded-full bg-black/20 w-fit border border-white/5">
+//             <div className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+//             <p className="text-[10px] font-bold uppercase tracking-widest text-white/90">{sub}</p>
+//           </div>
+//         )}
+//       </div>
+//       {Icon && (
+//         <div className="absolute right-6 top-8 text-white/10 group-hover:text-white/20 transition-colors duration-500">
+//           <Icon size={64} strokeWidth={3} />
+//         </div>
+//       )}
+//       <div className="absolute top-0 right-0 w-32 h-32 bg-white/10 blur-[50px] rounded-full -mr-16 -mt-16" />
+//     </motion.div>
+//   )
+// }
+
+// const CustomTooltip = ({ active, payload, currency }: any) => {
+//   if (!active || !payload?.length) return null
+//   return (
+//     <div className="bg-black border border-white/10 rounded-2xl p-4 shadow-2xl">
+//       <p className="text-[10px] font-black text-orange-500 uppercase tracking-widest mb-1">
+//         {payload[0].payload.month || payload[0].name}
+//       </p>
+//       <p className="text-lg font-black text-white">{formatMoney(payload[0].value, currency)}</p>
+//     </div>
+//   )
+// }
+
+// export default function Dashboard() {
+//   const { user } = useAuth()
+//   const navigate = useNavigate()
+//   const currency = user?.currency || 'INR'
+//   const monthYear = currentMonthYear()
+//   const year = currentYear()
+
+//   const { data: summaryRes, isLoading: loadingSummary } = useQuery({
+//     queryKey: ['dashboard-summary'],
+//     queryFn: () => dashboardApi.getSummary(),
+//   })
+  
+//   const { data: monthlyRes } = useQuery({
+//     queryKey: ['dashboard-monthly', year],
+//     queryFn: () => dashboardApi.getMonthlyChart(year),
+//   })
+
+//   const { data: categoryRes } = useQuery({
+//     queryKey: ['dashboard-categories', monthYear],
+//     queryFn: () => dashboardApi.getCategoryChart(monthYear),
+//   })
+
+//   const { data: txRes } = useQuery({
+//     queryKey: ['transactions-recent'],
+//     queryFn: () => transactionApi.getAll(),
+//   })
+
+//   const summary: DashboardSummary | undefined = summaryRes?.data?.data
+//   const monthlyData: MonthlyChartData[] = monthlyRes?.data?.data || []
+//   const categoryData: CategoryChartData[] = categoryRes?.data?.data || []
+//   const allTx: Transaction[] = txRes?.data?.data || []
+//   const recentTx = allTx.slice(0, 5)
+
+//   const totalForPie = categoryData.reduce((s, d) => s + d.total, 0)
+//   const pieData = categoryData.map((d, i) => ({
+//     name: d.categoryName,
+//     value: d.total,
+//     color: d.color || PIE_COLORS[i % PIE_COLORS.length],
+//   }))
+
+//   const MONTH_NAMES = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC']
+//   const monthlyMap = Object.fromEntries(monthlyData.map(d => [d.month.slice(5), d.expense]))
+//   const barData = MONTH_NAMES.map((name, i) => {
+//     const key = String(i + 1).padStart(2, '0')
+//     return { month: name, Expense: monthlyMap[key] ?? 0 }
+//   })
+
+//   const savingsRate = summary && summary.totalIncome > 0
+//     ? Math.round((summary.netBalance / summary.totalIncome) * 100)
+//     : 0
+
+//   return (
+//     <div className="space-y-8 max-w-[1600px] mx-auto pb-10">
+      
+//       {/* ── HEADER ── */}
+//       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+//         <div>
+//           <h1 className="text-4xl font-[1000] text-black tracking-tighter uppercase leading-none">
+//             Control <span className="text-orange-500">Room</span>
+//           </h1>
+//           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3">Active Operational Hub • {year}</p>
+//         </div>
+//         <button 
+//           onClick={() => navigate('/transactions')}
+//           className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-[0_10px_30px_rgba(0,0,0,0.1)] active:scale-95"
+//         >
+//           + Initialize Entry
+//         </button>
+//       </div>
+
+//       {/* ── STATS ── */}
+//       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+//         {loadingSummary ? (
+//           [1,2,3,4].map(i => <div key={i} className="h-40 rounded-[2rem] animate-pulse bg-gray-100" />)
+//         ) : (
+//           <>
+//             <StatCard label="Inflow" value={summary?.totalIncome ?? 0} currency={currency} sub="Income" bg="bg-black" icon={ArrowUpRight} />
+//             <StatCard label="Outflow" value={summary?.totalExpenses ?? 0} currency={currency} sub="Spending" bg="bg-orange-500" icon={ArrowDownRight} />
+//             <StatCard label="Net Asset" value={summary?.netBalance ?? 0} currency={currency} sub="Liquidity" bg="bg-slate-900" icon={Activity} />
+//             <StatCard label="Efficiency" value={`${savingsRate}%`} sub="Savings Rate" bg="bg-orange-600" icon={Target} />
+//           </>
+//         )}
+//       </div>
+
+//       {/* ── CHARTS ── */}
+//       <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+//         <div className="xl:col-span-2 bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-100">
+//           <div className="flex items-center justify-between mb-8">
+//             <h2 className="text-[11px] font-black text-black uppercase tracking-[0.3em]">Capital Flow Index</h2>
+//             <div className="flex items-center gap-2">
+//               <span className="w-2 h-2 rounded-full bg-orange-500" />
+//               <span className="text-[9px] font-black uppercase text-slate-400">Monthly Expenses</span>
+//             </div>
+//           </div>
+//           <ResponsiveContainer width="100%" height={320}>
+//             <BarChart data={barData} margin={{ top: 0, right: 0, left: -20, bottom: 0 }}>
+//               <CartesianGrid strokeDasharray="8 8" stroke="#f1f5f9" vertical={false} />
+//               <XAxis dataKey="month" tick={{ fontSize: 9, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} dy={10} />
+//               <YAxis tick={{ fontSize: 9, fontWeight: 900, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+//               <Tooltip cursor={{ fill: '#f8fafc' }} content={<CustomTooltip currency={currency} />} />
+//               <Bar dataKey="Expense" fill="#000000" radius={[10, 10, 2, 2]} barSize={35} />
+//             </BarChart>
+//           </ResponsiveContainer>
+//         </div>
+
+//         <div className="bg-black rounded-[2.5rem] p-10 shadow-2xl relative overflow-hidden flex flex-col justify-between">
+//           <h2 className="text-[11px] font-black text-white/40 uppercase tracking-[0.3em]">Sector Distribution</h2>
+//           <div className="relative h-[250px] my-4">
+//              <ResponsiveContainer width="100%" height="100%">
+//                 <PieChart>
+//                   <Pie data={pieData} cx="50%" cy="50%" innerRadius={65} outerRadius={95} paddingAngle={8} dataKey="value" strokeWidth={0}>
+//                     {pieData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+//                   </Pie>
+//                   <Tooltip content={<CustomTooltip currency={currency} />} />
+//                 </PieChart>
+//              </ResponsiveContainer>
+//              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+//                 <p className="text-[9px] font-black text-orange-500 uppercase tracking-widest">Aggregate</p>
+//                 <p className="text-xl font-black text-white tracking-tighter">
+//                   {formatMoney(totalForPie, currency).split('.')[0]}
+//                 </p>
+//              </div>
+//           </div>
+//           <div className="space-y-3">
+//              {pieData.slice(0, 3).map((d) => (
+//                 <div key={d.name} className="flex items-center justify-between group cursor-default">
+//                    <div className="flex items-center gap-3">
+//                       <div className="w-2 h-2 rounded-full transition-transform group-hover:scale-150" style={{ backgroundColor: d.color }} />
+//                       <span className="text-[10px] font-black text-white/60 uppercase tracking-wider group-hover:text-white transition-colors">{d.name}</span>
+//                    </div>
+//                    <span className="text-[10px] font-mono font-bold text-white/90">{formatMoney(d.value, currency)}</span>
+//                 </div>
+//              ))}
+//           </div>
+//         </div>
+//       </div>
+
+//       {/* ── RECENT ACTIVITY ── */}
+//       <div className="bg-white rounded-[2.5rem] p-10 shadow-[0_20px_50px_rgba(0,0,0,0.03)] border border-gray-100">
+//         <div className="flex items-center justify-between mb-8">
+//           <h2 className="text-[11px] font-black text-black uppercase tracking-[0.3em]">Latest Transactions</h2>
+//           <button 
+//             onClick={() => navigate('/transactions')} 
+//             className="text-[10px] font-black text-orange-500 uppercase tracking-widest hover:text-orange-600 transition-colors"
+//           >
+//             Access Full Ledger
+//           </button>
+//         </div>
+//         <div className="overflow-x-auto">
+//           <table className="w-full">
+//             <thead>
+//               <tr className="border-b border-gray-100">
+//                 <th className="pb-5 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Transaction</th>
+//                 <th className="pb-5 text-left text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Cluster</th>
+//                 <th className="pb-5 text-right text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Timestamp</th>
+//                 <th className="pb-5 text-right text-[9px] font-black text-slate-400 uppercase tracking-[0.2em]">Amount</th>
+//               </tr>
+//             </thead>
+//             <tbody className="divide-y divide-gray-50">
+//               {recentTx.map(tx => (
+//                 <tr key={tx.id} className="group hover:bg-gray-50 transition-all duration-300">
+//                   <td className="py-6">
+//                     <div className="flex items-center gap-4">
+//                       <div className={cn(
+//                         "w-12 h-12 rounded-2xl flex items-center justify-center font-black text-[10px] transition-transform group-hover:rotate-6",
+//                         tx.type === 'INCOME' ? "bg-orange-500/10 text-orange-500" : "bg-black text-white"
+//                       )}>
+//                         {tx.type === 'INCOME' ? 'INC' : 'EXP'}
+//                       </div>
+//                       <span className="text-[13px] font-black text-black uppercase tracking-tight">{tx.description || tx.categoryName}</span>
+//                     </div>
+//                   </td>
+//                   <td className="py-6">
+//                     <span className="text-[10px] font-black text-slate-400 uppercase border border-slate-100 px-3 py-1 rounded-full bg-slate-50">
+//                       {tx.categoryName}
+//                     </span>
+//                   </td>
+//                   <td className="py-6 text-right text-[10px] font-bold text-slate-400 uppercase">{formatDate(tx.date)}</td>
+//                   <td className={cn(
+//                     "py-6 text-right font-mono font-black text-[15px]",
+//                     tx.type === 'INCOME' ? "text-orange-500" : "text-black"
+//                   )}>
+//                     {tx.type === 'INCOME' ? '+' : '-'}{formatMoney(tx.amount, currency)}
+//                   </td>
+//                 </tr>
+//               ))}
+//             </tbody>
+//           </table>
+//         </div>
+//       </div>
+//     </div>
+//   )
+// }

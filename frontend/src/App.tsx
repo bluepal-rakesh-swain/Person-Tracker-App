@@ -7,6 +7,7 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext'
 import ProtectedRoute from '@/components/ProtectedRoute'
 import Layout from '@/components/Layout'
 import { ToastProvider } from '@/components/Toaster'
+import LandingPage from '@/pages/LandingPage'
 import Login from '@/pages/Login'
 import Register from '@/pages/Register'
 import ForgotPassword from '@/pages/ForgotPassword'
@@ -46,7 +47,7 @@ function AdminGuard({ children }: { children: React.ReactNode }) {
 
 function RoleRedirect() {
   const { isAuthenticated, user } = useAuth()
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (!isAuthenticated) return <Navigate to="/" replace />
   if (user?.role === 'ADMIN') return <Navigate to="/admin" replace />
   return <Navigate to="/dashboard" replace />
 }
@@ -66,6 +67,7 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             {/* Public */}
+            <Route path="/" element={<LandingPage />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
