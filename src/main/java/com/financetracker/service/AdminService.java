@@ -30,6 +30,11 @@ public class AdminService {
         return userRepository.findAll().stream().map(this::toUserResponse).collect(Collectors.toList());
     }
 
+    public User getUserById(Long userId) {
+        return userRepository.findById(userId)
+            .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+    }
+
     @Transactional
     public AdminUserResponse setUserEnabled(Long userId, boolean enabled) {
         User user = userRepository.findById(userId)

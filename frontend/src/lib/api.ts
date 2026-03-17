@@ -165,4 +165,18 @@ export const adminApi = {
   deleteUser: (id: number) => api.delete(`/admin/users/${id}`),
   getStats: () => api.get('/admin/stats'),
   getImportLogs: () => api.get('/admin/imports'),
+  exportUserCsv: (id: number) =>
+    api.get(`/admin/users/${id}/export/csv`, { responseType: 'blob' }),
+  importUserCsv: (id: number, file: File, mapping: object) => {
+    const form = new FormData()
+    form.append('file', file)
+    form.append('mapping', JSON.stringify(mapping))
+    return api.post(`/admin/users/${id}/import/csv`, form, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+  },
+  exportAllUsersCsv: () =>
+    api.get('/admin/export/users/csv', { responseType: 'blob' }),
+  exportAllUsersPdf: () =>
+    api.get('/admin/export/users/pdf', { responseType: 'blob' }),
 }

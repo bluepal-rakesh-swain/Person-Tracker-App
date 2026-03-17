@@ -1,7 +1,8 @@
+import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Users, BarChart3, Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, AlertCircle, Download, Upload, FileText } from 'lucide-react'
 import { adminApi } from '@/lib/api'
 
 interface AdminUser {
@@ -79,12 +80,100 @@ export default function AdminPanel() {
     mutationFn: (id: number) => adminApi.deleteUser(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
   })
+
+  const importFileRef = useRef<HTMLInputElement>(null)
+  const [importingUserId, setImportingUserId] = useState<number | null>(null)
+  const [importStatus, setImportStatus] = useState<string | null>(null)
+
+  const handleExport = async (u: AdminUser) => {
+    const res = await adminApi.exportUserCsv(u.id)
+    const url = URL.createObjectURL(new Blob([res.data]))
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `transactions_${u.email}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleImportClick = (userId: number) => {
+    setImportingUserId(userId)
+    setImportStatus(null)
+    importFileRef.current?.click()
+  }
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file || importingUserId === null) return
+    e.target.value = ''
+    try {
+      const defaultMapping = { date: 'date', desc: 'description', amount: 'amount', defaultCategoryId: null }
+      await adminApi.importUserCsv(importingUserId, file, defaultMapping)
+      setImportStatus('Import successful')
+    } catch {
+      setImportStatus('Import failed')
+    } finally {
+      setImportingUserId(null)
+    }
+  }
+
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
+
+  const handleExportAllCsv = async () => {
+    const res = await adminApi.exportAllUsersCsv()
+    downloadBlob(new Blob([res.data], { type: 'text/csv' }), 'all_users.csv')
+  }
+
+  const handleExportAllPdf = async () => {
+    const res = await adminApi.exportAllUsersPdf()
+    downloadBlob(new Blob([res.data], { type: 'application/pdf' }), 'all_users.pdf')
+  }
   return (
     <div className="space-y-6 animate-fade-in">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
-        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage users, monitor platform, and view import history</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h1>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage users, monitor platform, and view import history</p>
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <button
+            onClick={handleExportAllPdf}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-red-50 dark:bg-red-500/10 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-500/20 transition-colors"
+            title="Export all users as PDF"
+          >
+            <FileText size={15} />
+            PDF
+          </button>
+          <button
+            onClick={handleExportAllCsv}
+            className="flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-medium bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-500/20 transition-colors"
+            title="Export all users as CSV"
+          >
+            <Download size={15} />
+            CSV
+          </button>
+        </div>
       </div>
+
+      {/* Hidden file input for CSV import */}
+      <input ref={importFileRef} type="file" accept=".csv" className="hidden" onChange={handleFileChange} />
+
+      {/* Import status toast */}
+      {importStatus && (
+        <div className={`text-sm px-4 py-2 rounded-lg w-fit ${
+          importStatus.includes('successful')
+            ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400'
+            : 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400'
+        }`}>
+          {importStatus}
+        </div>
+      )}
 
 
       {/* Users Tab */}
@@ -97,7 +186,7 @@ export default function AdminPanel() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b border-gray-100 dark:border-gray-800">
-                    {['Name', 'Email', 'Currency', 'Role', 'Verified', 'Status', 'Actions'].map(h => (
+                    {['Name', 'Email', 'Currency', 'Verified', 'Status', 'Actions'].map(h => (
                       <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{h}</th>
                     ))}
                   </tr>
@@ -109,15 +198,6 @@ export default function AdminPanel() {
                       <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">{u.fullName}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{u.email}</td>
                       <td className="px-4 py-3 text-gray-600 dark:text-gray-400">{u.currency}</td>
-                      <td className="px-4 py-3">
-                        <select
-                          value={u.role}
-                          onChange={e => changeRole.mutate({ id: u.id, role: e.target.value })}
-                          className="px-2 py-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-xs text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
-                          <option value="USER">USER</option>
-                          <option value="ADMIN">ADMIN</option>
-                        </select>
-                      </td>
                       <td className="px-4 py-3">
                         {u.emailVerified
                           ? <CheckCircle size={16} className="text-emerald-500" />
