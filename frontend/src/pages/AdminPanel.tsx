@@ -1,7 +1,7 @@
-import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Users, BarChart3, FileText, Trash2, ShieldCheck, ShieldOff, UserCog, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
+import { Users, BarChart3, Trash2, ShieldCheck, ShieldOff, CheckCircle, XCircle, AlertCircle } from 'lucide-react'
 import { adminApi } from '@/lib/api'
 
 interface AdminUser {
@@ -36,7 +36,9 @@ interface ImportLog {
 type Tab = 'users' | 'stats' | 'imports'
 
 export default function AdminPanel() {
-  const [tab, setTab] = useState<Tab>('users')
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = (searchParams.get('tab') as Tab) || 'users'
+  const setTab = (t: Tab) => setSearchParams({ tab: t })
   const qc = useQueryClient()
 
   const { data: usersRes, isLoading: usersLoading } = useQuery({
@@ -77,13 +79,6 @@ export default function AdminPanel() {
     mutationFn: (id: number) => adminApi.deleteUser(id),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-users'] }),
   })
-
-  const tabs = [
-    { id: 'users' as Tab,   label: 'Users',            icon: Users },
-    { id: 'stats' as Tab,   label: 'Platform Stats',   icon: BarChart3 },
-    { id: 'imports' as Tab, label: 'CSV Import Logs',  icon: FileText },
-  ]
-
   return (
     <div className="space-y-6 animate-fade-in">
       <div>
@@ -91,20 +86,6 @@ export default function AdminPanel() {
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">Manage users, monitor platform, and view import history</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 p-1 bg-gray-100 dark:bg-gray-800 rounded-xl w-fit">
-        {tabs.map(({ id, label, icon: Icon }) => (
-          <button key={id} onClick={() => setTab(id)}
-            className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-              tab === id
-                ? 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-            }`}>
-            <Icon size={15} />
-            {label}
-          </button>
-        ))}
-      </div>
 
       {/* Users Tab */}
       {tab === 'users' && (

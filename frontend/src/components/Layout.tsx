@@ -1,10 +1,10 @@
 import { useState } from 'react'
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ArrowLeftRight, Tag, Target,
   LogOut, Menu,
-  TrendingUp, ChevronRight, ShieldCheck, ChevronLeft,
+  TrendingUp, ChevronRight, ChevronLeft, Users, BarChart3,
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import ThemeToggle from './ThemeToggle'
@@ -29,6 +29,9 @@ export default function Layout() {
 
   const SidebarContent = ({ isMobile = false }: { isMobile?: boolean }) => {
     const isCollapsed = !isMobile && collapsed
+    const location = useLocation()
+    const [searchParams] = useSearchParams()
+    const currentTab = searchParams.get('tab')
     return (
       <div className="flex flex-col h-full overflow-hidden">
 
@@ -93,26 +96,32 @@ export default function Layout() {
           ))}
 
           {user?.role === 'ADMIN' && (
-            <NavLink
-              to="/admin"
-              onClick={() => setMobileOpen(false)}
-              title={isCollapsed ? 'Admin Panel' : undefined}
-              className={({ isActive }) => cn(
-                'flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
-                isCollapsed ? 'justify-center px-2' : 'px-3',
-                isActive
-                  ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400'
-                  : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
-              )}
-            >
-              {({ isActive }) => (
-                <>
-                  <ShieldCheck size={18} className={isActive ? 'text-purple-500' : ''} />
-                  {!isCollapsed && <span className="flex-1">Admin Panel</span>}
-                  {!isCollapsed && isActive && <ChevronRight size={14} className="text-purple-400" />}
-                </>
-              )}
-            </NavLink>
+            <>
+              {[
+                { tab: 'users', label: 'Users', icon: Users },
+                { tab: 'stats', label: 'Platform Stats', icon: BarChart3 },
+              ].map(({ tab, label, icon: Icon }) => {
+                const isActive = location.pathname === '/admin' && currentTab === tab
+                return (
+                  <button
+                    key={tab}
+                    onClick={() => { navigate(`/admin?tab=${tab}`); setMobileOpen(false) }}
+                    title={isCollapsed ? label : undefined}
+                    className={cn(
+                      'w-full flex items-center gap-3 py-2.5 rounded-xl text-sm font-medium transition-all duration-200',
+                      isCollapsed ? 'justify-center px-2' : 'px-3',
+                      isActive
+                        ? 'bg-purple-50 dark:bg-purple-500/10 text-purple-600 dark:text-purple-400'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 hover:text-gray-900 dark:hover:text-white'
+                    )}
+                  >
+                    <Icon size={18} className={isActive ? 'text-purple-500' : ''} />
+                    {!isCollapsed && <span className="flex-1">{label}</span>}
+                    {!isCollapsed && isActive && <ChevronRight size={14} className="text-purple-400" />}
+                  </button>
+                )
+              })}
+            </>
           )}
         </nav>
 
