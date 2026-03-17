@@ -24,7 +24,7 @@ import AdminPanel from '@/pages/AdminPanel'
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      staleTime: 1000 * 60 * 5,   // 5 min — data considered fresh
+      staleTime: 0,                 // always refetch on mount
       gcTime: 1000 * 60 * 60 * 24, // 24 hours — keep cache for persister
       retry: 2,
       refetchOnWindowFocus: false,
@@ -59,7 +59,7 @@ export default function App() {
       persistOptions={{
         persister,
         maxAge: 1000 * 60 * 60 * 24, // 24 hours
-        buster: '1',                  // bump this string to invalidate old cache
+        buster: '2',                  // bump this string to invalidate old cache
       }}
     >
       <AuthProvider>

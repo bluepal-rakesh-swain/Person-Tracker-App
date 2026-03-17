@@ -58,6 +58,8 @@ export default function Dashboard() {
   const { data: summaryRes, isLoading: loadingSummary } = useQuery({
     queryKey: ['dashboard-summary'],
     queryFn: () => dashboardApi.getSummary(),
+    staleTime: 0,
+    refetchOnMount: true,
   })
   const { data: monthlyRes } = useQuery({
     queryKey: ['dashboard-monthly', year],
@@ -67,11 +69,13 @@ export default function Dashboard() {
   const { data: categoryRes } = useQuery({
     queryKey: ['dashboard-categories', monthYear],
     queryFn: () => dashboardApi.getCategoryChart(monthYear),
+    staleTime: 0,
   })
   const { data: txRes } = useQuery({
     queryKey: ['transactions-recent'],
     queryFn: () => transactionApi.getAll(),
     staleTime: 0,
+    refetchOnMount: true,
   })
 
   const summary: DashboardSummary | undefined = summaryRes?.data?.data

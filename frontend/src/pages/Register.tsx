@@ -268,10 +268,9 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import {
   Eye, EyeOff, TrendingUp, Loader2, Mail, Lock,
-  User, ShieldCheck, Sparkles, Globe, Coins, ArrowRight
+  User, ShieldCheck, Sparkles, Coins, ArrowRight
 } from 'lucide-react'
 import { authApi } from '@/lib/api'
-import { useAuth } from '@/contexts/AuthContext'
 
 const schema = z.object({
   fullName: z.string().min(2, 'Full name is required'),
@@ -282,7 +281,6 @@ const schema = z.object({
 type FormData = z.infer<typeof schema>
 
 export default function Register() {
-  const { login } = useAuth()
   const navigate = useNavigate()
   const [showPw, setShowPw] = useState(false)
   const [error, setError] = useState('')
@@ -295,11 +293,8 @@ export default function Register() {
   const onSubmit = async (data: FormData) => {
     setError('')
     try {
-      const res = await authApi.register(data)
-      // Assuming registration returns the same structure as login
-      const { accessToken, refreshToken, user } = res.data.data
-      login(accessToken, refreshToken, user)
-      navigate('/dashboard')
+      await authApi.register(data)
+      navigate('/verify-email', { state: { email: data.email } })
     } catch (e: any) {
       setError(e.response?.data?.message || e.response?.data?.error || 'Registration failed. Please try again.')
     }
