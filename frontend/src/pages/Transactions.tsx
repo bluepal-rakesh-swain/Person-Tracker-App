@@ -43,6 +43,7 @@ export default function Transactions() {
       show('Export failed', 'error')
     }
   }
+
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [filterCat, setFilterCat] = useState<number | undefined>()
@@ -63,7 +64,6 @@ export default function Transactions() {
   const allTransactions: Transaction[] = txRes?.data?.data || []
   const categories: Category[] = catRes?.data?.data || []
 
-  // Client-side filtering
   const transactions = allTransactions.filter(tx => {
     if (startDate && tx.date < startDate) return false
     if (endDate && tx.date > endDate) return false
@@ -77,9 +77,7 @@ export default function Transactions() {
     defaultValues: { type: 'EXPENSE', date: new Date().toISOString().split('T')[0] },
   })
   const selectedType = watch('type')
-  const watchedAmount = watch('amount')
 
-  // Total income and expense from all transactions
   const totalIncome   = allTransactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
   const totalExpenses = allTransactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
 
@@ -118,89 +116,97 @@ export default function Transactions() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
+
+      {/* ── Header ── */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Transactions</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">{transactions.length} records</p>
+          <h1 className="text-[26px] font-bold tracking-tight text-gray-900 dark:text-white">Transactions</h1>
+          <p className="text-[14px] text-gray-500 dark:text-gray-400 mt-0.5">{transactions.length} records found</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5 flex-shrink-0">
           {!isAdmin && (
             <>
               <button onClick={() => navigate('/import')}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <Upload size={15} /> Import CSV
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-[13px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all shadow-sm">
+                <Upload size={14} /> Import CSV
               </button>
               <button onClick={handleExport}
-                className="flex items-center gap-2 px-3 py-2 rounded-xl border border-gray-200 dark:border-gray-700 text-sm font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">
-                <Download size={15} /> Export
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-[13px] font-semibold text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 active:scale-95 transition-all shadow-sm">
+                <Download size={14} /> Export
               </button>
             </>
           )}
-          <button onClick={() => { setShowModal(true); refetchCats() }}
-            className="flex items-center gap-2 px-4 py-2 rounded-xl gradient-brand text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:opacity-90 transition-all"
-            style={{ display: isAdmin ? 'none' : undefined }}>
-            <Plus size={16} /> Add
-          </button>
+          {!isAdmin && (
+            <button onClick={() => { setShowModal(true); refetchCats() }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-lg gradient-brand text-white text-[13px] font-semibold shadow-md shadow-emerald-500/25 hover:opacity-90 active:scale-95 transition-all">
+              <Plus size={15} /> Add
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="card-base p-4 flex flex-wrap gap-3 items-center">
-        <Filter size={16} className="text-gray-400" />
+      {/* ── Filters ── */}
+      <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm p-4 flex flex-wrap gap-3 items-center">
+        <div className="flex items-center gap-2 text-gray-400">
+          <Filter size={15} />
+          <span className="text-[12px] font-semibold uppercase tracking-wider text-gray-400">Filter</span>
+        </div>
         <input type="date" value={startDate} onChange={e => setStartDate(e.target.value)}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-        <span className="text-gray-400 text-sm">to</span>
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
+        <span className="text-gray-300 dark:text-gray-600 text-sm">—</span>
         <input type="date" value={endDate} onChange={e => setEndDate(e.target.value)}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
         <select value={filterCat || ''} onChange={e => setFilterCat(e.target.value ? Number(e.target.value) : undefined)}
-          className="px-3 py-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500">
+          className="px-3 py-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-700 dark:text-gray-300 focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
           <option value="">All categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
         {(startDate || endDate || filterCat) && (
           <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCat(undefined) }}
-            className="text-xs text-red-500 hover:underline">Clear</button>
+            className="text-[12px] font-semibold text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-500/10">
+            Clear filters
+          </button>
         )}
       </div>
 
-      {/* Table */}
-      <div className="card-base overflow-hidden">
+      {/* ── Table ── */}
+      <div className="bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 shadow-sm overflow-hidden">
         {isLoading ? (
-          <div className="p-8 text-center text-gray-400 text-sm">Loading…</div>
+          <div className="py-16 text-center text-gray-400 text-sm">Loading…</div>
         ) : transactions.length === 0 ? (
-          <div className="p-12 text-center">
-            <ArrowLeftRight size={40} className="text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-            <p className="text-gray-500 dark:text-gray-400 font-medium">No transactions yet</p>
-            <p className="text-sm text-gray-400 dark:text-gray-500 mt-1">Add your first transaction to get started</p>
+          <div className="py-20 text-center">
+            <ArrowLeftRight size={40} className="text-gray-200 dark:text-gray-700 mx-auto mb-4" />
+            <p className="text-[14px] font-semibold text-gray-500 dark:text-gray-400">No transactions yet</p>
+            <p className="text-[13px] text-gray-400 dark:text-gray-500 mt-1">Add your first transaction to get started</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full text-[13.5px]">
               <thead>
-                <tr className="border-b border-gray-100 dark:border-gray-800">
+                <tr className="bg-gray-50/70 dark:bg-gray-800/40">
                   {['Date','Type','Category','Description','Amount'].map(h => (
-                    <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">{h}</th>
+                    <th key={h} className="px-5 py-3.5 text-left text-[11px] font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-widest">{h}</th>
                   ))}
                 </tr>
               </thead>
-              <tbody>
+              <tbody className="divide-y divide-gray-50 dark:divide-gray-800/60">
                 {transactions.map((tx, i) => (
-                  <motion.tr key={tx.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.02 }}
-                    className="border-b border-gray-50 dark:border-gray-800/50 hover:bg-gray-50 dark:hover:bg-gray-800/30 transition-colors">
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 whitespace-nowrap">{formatDate(tx.date)}</td>
-                    <td className="px-4 py-3">
+                  <motion.tr key={tx.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.02 }}
+                    className="hover:bg-gray-50/80 dark:hover:bg-gray-800/30 transition-colors duration-150">
+                    <td className="px-5 py-4 text-gray-500 dark:text-gray-400 whitespace-nowrap">{formatDate(tx.date)}</td>
+                    <td className="px-5 py-4">
                       {tx.type === 'INCOME'
-                        ? <span className="inline-flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-medium"><ArrowUpCircle size={14} />Income</span>
-                        : <span className="inline-flex items-center gap-1 text-red-500 font-medium"><ArrowDownCircle size={14} />Expense</span>
+                        ? <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold text-[12.5px]"><ArrowUpCircle size={14} />Income</span>
+                        : <span className="inline-flex items-center gap-1.5 text-rose-500 font-semibold text-[12.5px]"><ArrowDownCircle size={14} />Expense</span>
                       }
                     </td>
-                    <td className="px-4 py-3">
-                      <span className="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300">
+                    <td className="px-5 py-4">
+                      <span className="px-2.5 py-1 rounded-full text-[11.5px] font-semibold bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300">
                         {tx.categoryName}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-gray-600 dark:text-gray-400 max-w-[200px] truncate">{tx.description || '—'}</td>
-                    <td className={`px-4 py-3 font-mono font-semibold ${tx.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-500'}`}>
+                    <td className="px-5 py-4 text-gray-500 dark:text-gray-400 max-w-[200px] truncate">{tx.description || <span className="text-gray-300 dark:text-gray-600">—</span>}</td>
+                    <td className={`px-5 py-4 font-mono font-bold ${tx.type === 'INCOME' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-500'}`}>
                       {tx.type === 'INCOME' ? '+' : '-'}{formatMoney(tx.amount, user?.currency)}
                     </td>
                   </motion.tr>
@@ -211,72 +217,82 @@ export default function Transactions() {
         )}
       </div>
 
-      {/* Add Modal */}
+      {/* ── Add Modal ── */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
               className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => { setShowModal(false); setSaveError('') }} />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95 }}
-              className="relative card-base p-6 w-full max-w-md shadow-2xl">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="text-lg font-bold text-gray-900 dark:text-white">Add Transaction</h2>
-                <button onClick={() => { setShowModal(false); setSaveError('') }} className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-                  <X size={18} />
+            <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white dark:bg-[#111827] rounded-2xl border border-gray-100 dark:border-gray-800 w-full max-w-md shadow-2xl overflow-hidden">
+
+              {/* Modal header */}
+              <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
+                <h2 className="text-[15px] font-bold text-gray-900 dark:text-white">Add Transaction</h2>
+                <button onClick={() => { setShowModal(false); setSaveError('') }}
+                  className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors">
+                  <X size={17} />
                 </button>
               </div>
-              <form onSubmit={handleSubmit(handleCreate)} className="space-y-4">
+
+              <form onSubmit={handleSubmit(handleCreate)} className="px-6 py-5 space-y-4">
                 {saveError && (
-                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm">
+                  <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-[13px]">
                     {saveError}
                   </div>
                 )}
+
+                {/* Type toggle */}
                 <div className="grid grid-cols-2 gap-3">
                   {(['INCOME','EXPENSE'] as const).map(t => (
                     <label key={t} className="cursor-pointer">
                       <input {...register('type')} type="radio" value={t} className="sr-only" />
-                      <div className={`p-3 rounded-xl border-2 text-center text-sm font-medium transition-all
+                      <div className={`p-3 rounded-xl border-2 text-center text-[13px] font-semibold transition-all
                         ${selectedType === t
                           ? t === 'INCOME'
                             ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                            : 'border-red-400 bg-red-50 dark:bg-red-500/10 text-red-500'
-                          : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500'
+                            : 'border-rose-400 bg-rose-50 dark:bg-rose-500/10 text-rose-500'
+                          : 'border-gray-200 dark:border-gray-700 text-gray-400 dark:text-gray-500 hover:border-gray-300 dark:hover:border-gray-600'
                         }`}>
                         {t}
                       </div>
                     </label>
                   ))}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Category</label>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Category</label>
                   <select {...register('categoryId')}
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500">
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all">
                     <option value="">Select category</option>
                     {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
                   </select>
-                  {catError && <p className="mt-1 text-xs text-red-500">Failed to load categories — <button type="button" className="underline" onClick={() => refetchCats()}>retry</button></p>}
-                  {errors.categoryId && <p className="mt-1 text-xs text-red-500">{errors.categoryId.message}</p>}
+                  {catError && <p className="text-[12px] text-red-500">Failed to load — <button type="button" className="underline" onClick={() => refetchCats()}>retry</button></p>}
+                  {errors.categoryId && <p className="text-[12px] text-red-500">{errors.categoryId.message}</p>}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Amount (₹)</label>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Amount ({user?.currency})</label>
                   <input {...register('amount')} type="number" step="0.01" placeholder="0.00"
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
-                  {errors.amount && <p className="mt-1 text-xs text-red-500">{errors.amount.message}</p>}
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
+                  {errors.amount && <p className="text-[12px] text-red-500">{errors.amount.message}</p>}
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Date</label>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Date</label>
                   <input {...register('date')} type="date"
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
                 </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">Description</label>
+
+                <div className="space-y-1.5">
+                  <label className="text-[11px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Description</label>
                   <input {...register('description')} type="text" placeholder="Optional note"
-                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500" />
+                    className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-[13px] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 transition-all" />
                 </div>
+
                 <button type="submit" disabled={isSubmitting || createMutation.isPending}
-                  className="w-full py-2.5 rounded-xl gradient-brand text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:opacity-90 transition-all disabled:opacity-60 flex items-center justify-center gap-2">
-                  {(isSubmitting || createMutation.isPending) && <Loader2 size={16} className="animate-spin" />}
+                  className="w-full py-2.5 rounded-xl gradient-brand text-white font-semibold text-[13px] shadow-lg shadow-emerald-500/25 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 mt-1">
+                  {(isSubmitting || createMutation.isPending) && <Loader2 size={15} className="animate-spin" />}
                   Save Transaction
                 </button>
               </form>
