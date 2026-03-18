@@ -789,9 +789,10 @@ import { cn } from '@/lib/utils'
 
 const baseNavItems = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
+  
   { to: '/categories',   icon: Tag,             label: 'categories' },
   { to: '/budgets',      icon: Target,          label: 'budgets' },
+  { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
 ]
 
 export default function Layout() {
