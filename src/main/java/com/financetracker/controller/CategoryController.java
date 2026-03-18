@@ -7,7 +7,9 @@ import com.financetracker.entity.User;
 import com.financetracker.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -18,7 +20,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
-
 public class CategoryController {
 
     private final CategoryService categoryService;
@@ -57,5 +58,27 @@ public class CategoryController {
     ) {
         categoryService.delete(user, id);
         return ResponseEntity.ok(ApiResponse.ok("Category deleted", null));
+    }
+
+    @GetMapping("/export/csv")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportCsv(@AuthenticationPrincipal User user) {
+        byte[] bytes = categoryService.exportToCsvBytes(user);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.parseMediaType("text/csv"));
+        headers.setContentDispositionFormData("attachment", "categories.csv");
+        headers.setContentLength(bytes.length);
+        return ResponseEntity.ok().headers(headers).body(bytes);
+    }
+
+    @GetMapping("/export/pdf")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<byte[]> exportPdf(@AuthenticationPrincipal User user) throws Exception {
+        byte[] bytes = categoryService.exportToPdfBytes(user);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_PDF);
+        headers.setContentDispositionFormData("attachment", "categories.pdf");
+        headers.setContentLength(bytes.length);
+        return ResponseEntity.ok().headers(headers).body(bytes);
     }
 }

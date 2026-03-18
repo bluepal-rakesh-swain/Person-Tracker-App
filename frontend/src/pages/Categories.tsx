@@ -1,289 +1,10 @@
-// import { useState } from 'react'
-// import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-// import { useForm } from 'react-hook-form'
-// import { zodResolver } from '@hookform/resolvers/zod'
-// import { z } from 'zod'
-// import { AnimatePresence, motion } from 'framer-motion'
-// import { Plus, X, Pencil, Trash2, Loader2 } from 'lucide-react'
-// import { categoryApi } from '@/lib/api'
-// import type { Category } from '@/types'
-// import { useAuth } from '@/contexts/AuthContext'
-// import { useToast } from '@/components/Toaster'
-
-// const COLORS = ['#10b981','#6366f1','#f59e0b','#ef4444','#06b6d4','#8b5cf6','#ec4899','#14b8a6','#f97316','#84cc16']
-// const ICONS  = ['briefcase','shopping-cart','home','car','utensils','heart','book','music','plane','gift','zap','star']
-
-// const schema = z.object({
-//   name:  z.string().min(1, 'Name required'),
-//   type:  z.enum(['INCOME','EXPENSE']),
-//   color: z.string().min(1),
-//   icon:  z.string().min(1),
-// })
-// type FormData = z.infer<typeof schema>
-
-// export default function Categories() {
-//   const qc = useQueryClient()
-//   const { show } = useToast()
-//   const [showModal, setShowModal] = useState(false)
-//   const [editing, setEditing]     = useState<Category | null>(null)
-//   const [apiError, setApiError]   = useState('')
-
-//   const { data: catRes, isLoading } = useQuery({
-//     queryKey: ['categories'],
-//     queryFn: () => categoryApi.getAll(),
-//   })
-//   const categories: Category[] = catRes?.data?.data || []
-
-//   const { user } = useAuth()
-//   const isAdmin = user?.role === 'ADMIN'
-
-//   const { register, handleSubmit, reset, setValue, watch, formState: { errors, isSubmitting } } = useForm<FormData>({
-//     resolver: zodResolver(schema),
-//     defaultValues: { type: 'EXPENSE', color: COLORS[0], icon: ICONS[0] },
-//   })
-//   const selectedColor = watch('color')
-
-//   const openCreate = () => {
-//     setEditing(null)
-//     setApiError('')
-//     reset({ type: 'EXPENSE', color: COLORS[0], icon: ICONS[0] })
-//     setShowModal(true)
-//   }
-//   const openEdit = (c: Category) => {
-//     setEditing(c)
-//     setApiError('')
-//     reset({ name: c.name, type: c.type, color: c.color, icon: c.icon })
-//     setShowModal(true)
-//   }
-
-//   const saveMutation = useMutation({
-//     mutationFn: (data: FormData) =>
-//       editing ? categoryApi.update(editing.id, data) : categoryApi.create(data),
-//     onSuccess: () => {
-//       qc.invalidateQueries({ queryKey: ['categories'] })
-//       setShowModal(false)
-//       setApiError('')
-//       show(editing ? 'Category updated successfully' : 'Category created successfully')
-//     },
-//     onError: (e: any) => {
-//       setApiError(e?.response?.data?.message || e?.response?.data?.error || 'Failed to save category')
-//     },
-//   })
-
-//   const deleteMutation = useMutation({
-//     mutationFn: (id: number) => categoryApi.delete(id),
-//     onSuccess: () => {
-//       qc.invalidateQueries({ queryKey: ['categories'] })
-//       show('Category deleted', 'warning')
-//     },
-//   })
-
-//   const income  = categories.filter(c => c.type === 'INCOME')
-//   const expense = categories.filter(c => c.type === 'EXPENSE')
-
-//   const groups = [
-//     { label: 'Income',  items: income,  badge: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-400' },
-//     { label: 'Expense', items: expense, badge: 'bg-red-100 text-red-700 dark:bg-red-500/15 dark:text-red-400' },
-//   ]
-
-//   return (
-//     <div className="space-y-6 animate-fade-in">
-//       {/* Header */}
-//       <div className="flex items-center justify-between">
-//         <div>
-//           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Categories</h1>
-//           <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">{categories.length} categories</p>
-//         </div>
-//         {!isAdmin && (
-//           <button onClick={openCreate}
-//             className="flex items-center gap-2 px-4 py-2.5 rounded-xl gradient-brand text-white text-sm font-semibold shadow-lg shadow-emerald-500/25 hover:opacity-90 active:scale-[0.98] transition-all">
-//             <Plus size={16} /> Add Category
-//           </button>
-//         )}
-//       </div>
-
-//       {/* Category groups */}
-//       {isLoading ? (
-//         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-//           {[1,2,3,4,5,6].map(i => (
-//             <div key={i} className="card-base h-20 animate-pulse" />
-//           ))}
-//         </div>
-//       ) : (
-//         <div className="space-y-6">
-//           {groups.map(({ label, items, badge }) => (
-//             <div key={label}>
-//               <div className="flex items-center gap-2 mb-3">
-//                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ${badge}`}>{label}</span>
-//                 <span className="text-xs text-gray-400 font-medium">{items.length}</span>
-//               </div>
-//               {items.length === 0 ? (
-//                 <div className="card-base p-8 text-center text-gray-400 text-sm">
-//                   No {label.toLowerCase()} categories yet
-//                 </div>
-//               ) : (
-//                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-//                   {items.map(c => (
-//                     <motion.div key={c.id} layout
-//                       className="group relative rounded-2xl p-5 flex flex-col justify-between cursor-default select-none bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800"
-//                       style={{
-//                         boxShadow: '0 4px 20px rgba(0,0,0,0.06)',
-//                         minHeight: '140px',
-//                         transition: 'all 0.2s ease-in-out',
-//                       }}
-//                       whileHover={{ y: -3, boxShadow: '0 12px 32px rgba(0,0,0,0.11)' }}
-//                     >
-//                       {/* Left color accent bar */}
-//                       <div className="absolute left-0 top-4 bottom-4 w-1 rounded-full" style={{ background: c.color }} />
-
-//                       {/* Top row: icon badge + name */}
-//                       <div className="flex items-start gap-3 pl-3">
-//                         <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 text-white text-sm font-bold"
-//                           style={{ background: c.color }}>
-//                           {c.name.charAt(0).toUpperCase()}
-//                         </div>
-//                         <div className="flex-1 min-w-0">
-//                           <p className="text-[10px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5">Category</p>
-//                           <p className="text-base font-bold text-gray-900 dark:text-white leading-tight truncate">{c.name}</p>
-//                         </div>
-//                       </div>
-
-//                       {/* Bottom row: type + icon */}
-//                       <div className="flex items-center justify-between pl-3 mt-4 pt-3 border-t border-gray-100 dark:border-gray-800">
-//                         <div>
-//                           <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5">Type</p>
-//                           <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${c.type === 'INCOME' ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-500/10 dark:text-emerald-400' : 'bg-red-50 text-red-500 dark:bg-red-500/10 dark:text-red-400'}`}>
-//                             {c.type === 'INCOME' ? 'Income' : 'Expense'}
-//                           </span>
-//                         </div>
-//                         <div className="text-right">
-//                           <p className="text-[9px] font-semibold uppercase tracking-widest text-gray-400 dark:text-gray-500 mb-0.5">Icon</p>
-//                           <p className="text-xs font-medium text-gray-500 dark:text-gray-400 capitalize">{c.icon}</p>
-//                         </div>
-//                       </div>
-
-//                       {/* Actions overlay on hover */}
-//                       {!isAdmin && (
-//                         <div className="absolute top-3 right-3 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-//                           <button onClick={() => openEdit(c)}
-//                             className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-500 dark:text-gray-400 transition-colors">
-//                             <Pencil size={12} />
-//                           </button>
-//                           <button onClick={() => {
-//                               if (confirm(`Delete "${c.name}"? This cannot be undone.`)) deleteMutation.mutate(c.id)
-//                             }}
-//                             disabled={deleteMutation.isPending}
-//                             className="p-1.5 rounded-lg bg-gray-100 dark:bg-gray-800 hover:bg-red-100 dark:hover:bg-red-500/20 text-gray-500 dark:text-gray-400 hover:text-red-500 transition-colors">
-//                             <Trash2 size={12} />
-//                           </button>
-//                         </div>
-//                       )}
-//                     </motion.div>
-//                   ))}
-//                 </div>
-//               )}
-//             </div>
-//           ))}
-//         </div>
-//       )}
-
-//       {/* Modal */}
-//       {!isAdmin && (
-//       <AnimatePresence>
-//         {showModal && (
-//           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-//             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-//               className="absolute inset-0 bg-black/50 backdrop-blur-sm"
-//               onClick={() => setShowModal(false)} />
-
-//             <motion.div initial={{ opacity: 0, scale: 0.95, y: 10 }} animate={{ opacity: 1, scale: 1, y: 0 }}
-//               exit={{ opacity: 0, scale: 0.95, y: 10 }}
-//               className="relative bg-white dark:bg-[#111827] rounded-2xl shadow-2xl w-full max-w-md border border-gray-100 dark:border-gray-800">
-
-//               {/* Modal header */}
-//               <div className="flex items-center justify-between px-6 pt-5 pb-4 border-b border-gray-100 dark:border-gray-800">
-//                 <h2 className="text-base font-bold text-gray-900 dark:text-white">
-//                   {editing ? 'Edit Category' : 'New Category'}
-//                 </h2>
-//                 <button onClick={() => setShowModal(false)}
-//                   className="p-1.5 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-400 hover:text-gray-600 transition-colors">
-//                   <X size={17} />
-//                 </button>
-//               </div>
-
-//               {/* Modal body */}
-//               <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="px-6 py-5 space-y-4">
-
-//                 {apiError && (
-//                   <div className="p-3 rounded-xl bg-red-50 dark:bg-red-500/10 border border-red-200 dark:border-red-500/20 text-red-600 dark:text-red-400 text-sm">
-//                     {apiError}
-//                   </div>
-//                 )}
-
-//                 {/* Name */}
-//                 <div className="space-y-1.5">
-//                   <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Name</label>
-//                   <input {...register('name')} placeholder="e.g. Groceries"
-//                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all" />
-//                   {errors.name && <p className="text-xs text-red-500">{errors.name.message}</p>}
-//                 </div>
-
-//                 {/* Type */}
-//                 <div className="space-y-1.5">
-//                   <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Type</label>
-//                   <select {...register('type')}
-//                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
-//                     <option value="EXPENSE">Expense</option>
-//                     <option value="INCOME">Income</option>
-//                   </select>
-//                 </div>
-
-//                 {/* Color */}
-//                 <div className="space-y-2">
-//                   <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Color</label>
-//                   <div className="flex gap-2.5 flex-nowrap">
-//                     {COLORS.map(c => (
-//                       <button key={c} type="button" onClick={() => setValue('color', c)}
-//                         className={`w-7 h-7 rounded-full flex-shrink-0 transition-all hover:scale-110 ${selectedColor === c ? 'ring-2 ring-offset-2 ring-gray-500 scale-110' : ''}`}
-//                         style={{ background: c }} />
-//                     ))}
-//                   </div>
-//                 </div>
-
-//                 {/* Icon */}
-//                 <div className="space-y-1.5">
-//                   <label className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">Icon</label>
-//                   <select {...register('icon')}
-//                     className="w-full px-3 py-2.5 rounded-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 text-sm text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent transition-all">
-//                     {ICONS.map(i => <option key={i} value={i}>{i}</option>)}
-//                   </select>
-//                 </div>
-
-//                 {/* Submit */}
-//                 <button type="submit" disabled={saveMutation.isPending}
-//                   className="w-full py-2.5 rounded-xl gradient-brand text-white font-semibold text-sm shadow-lg shadow-emerald-500/25 hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-60 flex items-center justify-center gap-2 mt-2">
-//                   {saveMutation.isPending && <Loader2 size={15} className="animate-spin" />}
-//                   {editing ? 'Update Category' : 'Create Category'}
-//                 </button>
-//               </form>
-//             </motion.div>
-//           </div>
-//         )}
-//       </AnimatePresence>
-//       )}
-//     </div>
-//   )
-// }
-
-
-
-import { useState } from 'react'
+﻿import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Plus, X, Pencil, Trash2, Loader2, Layers, Tag } from 'lucide-react'
+import { Plus, X, Pencil, Trash2, Loader2, Download } from 'lucide-react'
 import { categoryApi } from '@/lib/api'
 import type { Category } from '@/types'
 import { useAuth } from '@/contexts/AuthContext'
@@ -291,8 +12,6 @@ import { useToast } from '@/components/Toaster'
 import { clsx, type ClassValue } from 'clsx'
 import { twMerge } from 'tailwind-merge'
 
-/** * Utility to merge tailwind classes
- */
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
@@ -350,18 +69,40 @@ export default function Categories() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
       setShowModal(false)
-      show(editing ? 'Category protocol updated' : 'New category initialized')
+      show(editing ? 'Category updated' : 'Category created')
     },
-    onError: (e: any) => setApiError(e?.response?.data?.message || 'Protocol failure'),
+    onError: (e: any) => setApiError(e?.response?.data?.message || 'Failed to save'),
   })
 
   const deleteMutation = useMutation({
     mutationFn: (id: number) => categoryApi.delete(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['categories'] })
-      show('Category purged from system', 'warning')
+      show('Category deleted', 'warning')
     },
   })
+
+  const handleExportCsv = async () => {
+    try {
+      const res = await categoryApi.exportCsv()
+      const url = URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url; a.download = 'categories.csv'; a.click()
+      URL.revokeObjectURL(url)
+      show('Exported as CSV')
+    } catch { show('CSV export failed', 'error') }
+  }
+
+  const handleExportPdf = async () => {
+    try {
+      const res = await categoryApi.exportPdf()
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url; a.download = 'categories.pdf'; a.click()
+      URL.revokeObjectURL(url)
+      show('Exported as PDF')
+    } catch { show('PDF export failed', 'error') }
+  }
 
   const groups = [
     { label: 'Income Clusters', type: 'INCOME', items: categories.filter(c => c.type === 'INCOME') },
@@ -370,29 +111,41 @@ export default function Categories() {
 
   return (
     <div className="space-y-10 max-w-[1600px] mx-auto pb-20">
-      
-      {/* ── HEADER ── */}
+
+      {/* HEADER */}
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-[1000] text-black tracking-tighter uppercase leading-none">
             Category <span className="text-orange-500">Clusters</span>
           </h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3">
-            System Classification Registry • {categories.length} Active Nodes
+            System Classification Registry &bull; {categories.length} Active Nodes
           </p>
         </div>
-        {!isAdmin && (
-          <button onClick={openCreate}
-            className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
-            <Plus size={16} /> Add New Node
+        <div className="flex items-center gap-3 flex-wrap justify-end">
+          <button onClick={handleExportCsv}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
+            <Download size={14} /> Export CSV
           </button>
-        )}
+          <button onClick={handleExportPdf}
+            className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
+            <Download size={14} /> Export PDF
+          </button>
+          {!isAdmin && (
+            <button onClick={openCreate}
+              className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
+              <Plus size={16} /> Add New Node
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* ── CATEGORY GRID ── */}
+      {/* CATEGORY GRID */}
       {isLoading ? (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[1, 2, 3].map(i => <div key={i} className="h-40 rounded-[2rem] bg-slate-50 animate-pulse border border-slate-100" />)}
+          {[1, 2, 3].map(i => (
+            <div key={i} className="h-40 rounded-[2rem] bg-slate-50 animate-pulse border border-slate-100" />
+          ))}
         </div>
       ) : (
         <div className="space-y-12">
@@ -403,58 +156,51 @@ export default function Categories() {
                 <div className="h-[1px] flex-1 bg-slate-100" />
                 <span className="text-[10px] font-black text-slate-300 uppercase">{items.length} Nodes</span>
               </div>
-
               {items.length === 0 ? (
                 <div className="bg-slate-50 rounded-[2rem] p-12 text-center border border-dashed border-slate-200">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No classification data found for {type}</p>
+                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">No data for {type}</p>
                 </div>
               ) : (
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                   {items.map(c => (
-                    <motion.div 
-                      key={c.id} 
+                    <motion.div
+                      key={c.id}
                       whileHover={{ y: -5 }}
                       className="group relative bg-white rounded-[2rem] p-6 shadow-[0_15px_40px_rgba(0,0,0,0.03)] border border-slate-100 transition-all hover:shadow-2xl hover:border-orange-500/20"
                     >
                       <div className="flex items-start justify-between mb-4">
-                        <div 
+                        <div
                           className="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-lg font-black shadow-lg"
                           style={{ backgroundColor: c.color }}
                         >
                           {c.name.charAt(0).toUpperCase()}
                         </div>
-                        
                         {!isAdmin && (
                           <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-all">
                             <button onClick={() => openEdit(c)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-black hover:bg-slate-100">
                               <Pencil size={14} />
                             </button>
-                            <button 
-                              onClick={() => confirm(`Purge cluster "${c.name}"?`) && deleteMutation.mutate(c.id)}
-                              className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50"
-                            >
+                            <button onClick={() => deleteMutation.mutate(c.id)} className="p-2 rounded-xl bg-slate-50 text-slate-400 hover:text-red-500 hover:bg-red-50">
                               <Trash2 size={14} />
                             </button>
                           </div>
                         )}
                       </div>
-
                       <div>
                         <p className="text-[9px] font-black text-slate-400 uppercase tracking-widest mb-1">Node Identifier</p>
                         <h3 className="text-lg font-[1000] text-black uppercase tracking-tighter leading-tight truncate">{c.name}</h3>
                       </div>
-
                       <div className="mt-6 pt-4 border-t border-slate-50 flex items-center justify-between">
-                         <div className="flex items-center gap-2">
-                            <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }} />
-                            <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{c.icon}</span>
-                         </div>
-                         <div className={cn(
-                           "px-3 py-1 rounded-full text-[8px] font-[1000] uppercase tracking-tighter",
-                           type === 'INCOME' ? "bg-orange-500 text-white" : "bg-black text-white"
-                         )}>
-                           {type}
-                         </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-1.5 h-1.5 rounded-full" style={{ backgroundColor: c.color }} />
+                          <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">{c.icon}</span>
+                        </div>
+                        <div className={cn(
+                          'px-3 py-1 rounded-full text-[8px] font-[1000] uppercase tracking-tighter',
+                          type === 'INCOME' ? 'bg-orange-500 text-white' : 'bg-black text-white'
+                        )}>
+                          {type}
+                        </div>
                       </div>
                     </motion.div>
                   ))}
@@ -465,16 +211,21 @@ export default function Categories() {
         </div>
       )}
 
-      {/* ── MODAL ── */}
+      {/* MODAL */}
       <AnimatePresence>
         {showModal && (
           <div className="fixed inset-0 z-[100] flex items-center justify-center p-6">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-              className="absolute inset-0 bg-black/80 backdrop-blur-md" onClick={() => setShowModal(false)} />
-
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95 }}
-              className="relative bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden border border-white/20">
-              
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-black/80 backdrop-blur-md"
+              onClick={() => setShowModal(false)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="relative bg-white rounded-[2.5rem] w-full max-w-md shadow-2xl overflow-hidden border border-white/20"
+            >
               <div className="bg-black p-8">
                 <div className="flex items-center justify-between mb-1">
                   <h2 className="text-xl font-[1000] text-white uppercase tracking-tighter">
@@ -486,17 +237,16 @@ export default function Categories() {
                 </div>
                 <p className="text-[9px] font-black text-white/30 uppercase tracking-[0.3em]">Registry Protocol v2.0</p>
               </div>
-
               <form onSubmit={handleSubmit(d => saveMutation.mutate(d))} className="p-8 space-y-6">
-                {apiError && <div className="p-4 rounded-2xl bg-red-50 text-red-600 text-[10px] font-black uppercase border border-red-100">{apiError}</div>}
-
+                {apiError && (
+                  <div className="p-4 rounded-2xl bg-red-50 text-red-600 text-[10px] font-black uppercase border border-red-100">{apiError}</div>
+                )}
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Node Name</label>
                   <input {...register('name')} placeholder="e.g. CORE ASSETS"
                     className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-orange-500 transition-all" />
                   {errors.name && <p className="text-[10px] text-red-500 font-bold">{errors.name.message}</p>}
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Cluster Type</label>
                   <select {...register('type')} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold outline-none focus:ring-2 focus:ring-orange-500 transition-all">
@@ -504,28 +254,23 @@ export default function Categories() {
                     <option value="INCOME">INCOME PROTOCOL</option>
                   </select>
                 </div>
-
                 <div className="space-y-3">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Color Signature</label>
                   <div className="flex flex-wrap gap-3">
                     {COLORS.map(c => (
                       <button key={c} type="button" onClick={() => setValue('color', c)}
-                        className={cn(
-                          "w-8 h-8 rounded-xl transition-all hover:scale-110",
-                          selectedColor === c ? "ring-4 ring-slate-100 scale-110 shadow-lg" : "opacity-60"
-                        )}
-                        style={{ backgroundColor: c }} />
+                        className={cn('w-8 h-8 rounded-xl transition-all hover:scale-110', selectedColor === c ? 'ring-4 ring-slate-100 scale-110 shadow-lg' : 'opacity-60')}
+                        style={{ backgroundColor: c }}
+                      />
                     ))}
                   </div>
                 </div>
-
                 <div className="space-y-2">
                   <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Icon Vector</label>
                   <select {...register('icon')} className="w-full px-5 py-4 rounded-2xl bg-slate-50 border border-slate-100 text-xs font-bold uppercase outline-none focus:ring-2 focus:ring-orange-500 transition-all">
                     {ICONS.map(i => <option key={i} value={i}>{i}</option>)}
                   </select>
                 </div>
-
                 <button type="submit" disabled={saveMutation.isPending}
                   className="w-full py-5 rounded-2xl bg-black text-white font-[1000] text-[11px] uppercase tracking-[0.2em] shadow-2xl hover:bg-orange-500 transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-3 mt-4">
                   {saveMutation.isPending && <Loader2 size={16} className="animate-spin" />}

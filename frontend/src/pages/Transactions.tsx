@@ -402,6 +402,21 @@ export default function Transactions() {
     }
   }
 
+  const handleExportPdf = async () => {
+    try {
+      const res = await csvApi.exportPdf()
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'transactions.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+      show('PDF exported successfully')
+    } catch {
+      show('PDF export failed', 'error')
+    }
+  }
+
   const createMutation = useMutation({
     mutationFn: (data: FormData) => transactionApi.create({
       ...data,
@@ -452,6 +467,9 @@ export default function Transactions() {
               </button>
               <button onClick={handleExport} className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
                 <Download size={14} /> Export
+              </button>
+              <button onClick={handleExportPdf} className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
+                <Download size={14} /> Export PDF
               </button>
               <button onClick={() => { setShowModal(true); refetchCats() }} className="flex items-center gap-2 px-8 py-3 rounded-2xl bg-black text-white text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95">
                 <Plus size={16} /> Add Entry

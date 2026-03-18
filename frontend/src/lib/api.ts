@@ -120,6 +120,8 @@ export const categoryApi = {
   update: (id: number, data: { name: string; type: string; color: string; icon: string }) =>
     api.put(`/categories/${id}`, data),
   delete: (id: number) => api.delete(`/categories/${id}`),
+  exportCsv: () => api.get('/categories/export/csv', { responseType: 'blob' }),
+  exportPdf: () => api.get('/categories/export/pdf', { responseType: 'blob' }),
 }
 
 // ── Transactions ──────────────────────────────────────────────────────────────
@@ -144,6 +146,13 @@ export const budgetApi = {
   getCurrent: (monthYear?: string) => api.get('/budgets/current', { params: monthYear ? { monthYear } : {} }),
   upsert: (data: { categoryId: number; monthYear: string; limitAmount: number }) =>
     api.post('/budgets', data),
+  exportCsv: () => api.get('/budgets/export/csv', { responseType: 'blob' }),
+  exportPdf: () => api.get('/budgets/export/pdf', { responseType: 'blob' }),
+  importCsv: (file: File) => {
+    const form = new FormData()
+    form.append('file', file)
+    return api.post('/budgets/import/csv', form, { headers: { 'Content-Type': 'multipart/form-data' } })
+  },
 }
 
 // ── CSV ───────────────────────────────────────────────────────────────────────
@@ -155,6 +164,7 @@ export const csvApi = {
     return api.post('/import/csv', form, { headers: { 'Content-Type': 'multipart/form-data' } })
   },
   export: () => api.get('/export/csv', { responseType: 'blob' }),
+  exportPdf: () => api.get('/export/pdf', { responseType: 'blob' }),
 }
 
 // ── Admin ─────────────────────────────────────────────────────────────────────

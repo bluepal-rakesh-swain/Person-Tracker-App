@@ -260,7 +260,7 @@ import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Target, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Activity } from 'lucide-react'
+import { Plus, X, Target, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Activity, Download } from 'lucide-react'
 import { budgetApi, categoryApi } from '@/lib/api'
 import { formatMoney, currentMonthYear, formatMonthYear } from '@/lib/utils'
 import type { Budget, Category } from '@/types'
@@ -359,6 +359,36 @@ export default function Budgets() {
   const [showModal, setShowModal] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(currentMonthYear())
 
+  const handleExportCsv = async () => {
+    try {
+      const res = await budgetApi.exportCsv()
+      const url = URL.createObjectURL(new Blob([res.data]))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'budgets.csv'
+      a.click()
+      URL.revokeObjectURL(url)
+      show('Budgets exported as CSV')
+    } catch {
+      show('CSV export failed', 'error')
+    }
+  }
+
+  const handleExportPdf = async () => {
+    try {
+      const res = await budgetApi.exportPdf()
+      const url = URL.createObjectURL(new Blob([res.data], { type: 'application/pdf' }))
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'budgets.pdf'
+      a.click()
+      URL.revokeObjectURL(url)
+      show('Budgets exported as PDF')
+    } catch {
+      show('PDF export failed', 'error')
+    }
+  }
+
   const prevMonth = () => {
     const [y, m] = selectedMonth.split('-').map(Number)
     const d = new Date(y, m - 2, 1)
@@ -422,10 +452,20 @@ export default function Budgets() {
           </div>
         </div>
         {!isAdmin && (
-          <button onClick={() => { reset({ monthYear: selectedMonth }); setShowModal(true) }}
-            className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
-            <Plus size={16} /> New Parameter
-          </button>
+          <div className="flex items-center gap-3 flex-wrap">
+            <button onClick={handleExportCsv}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
+              <Download size={14} /> Export CSV
+            </button>
+            <button onClick={handleExportPdf}
+              className="flex items-center gap-2 px-5 py-3 rounded-2xl bg-white border border-slate-100 text-[10px] font-black uppercase tracking-widest text-slate-600 hover:border-orange-500 transition-all shadow-sm">
+              <Download size={14} /> Export PDF
+            </button>
+            <button onClick={() => { reset({ monthYear: selectedMonth }); setShowModal(true) }}
+              className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
+              <Plus size={16} /> New Parameter
+            </button>
+          </div>
         )}
       </div>
 

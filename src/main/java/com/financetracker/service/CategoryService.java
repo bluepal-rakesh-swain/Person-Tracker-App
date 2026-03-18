@@ -6,10 +6,14 @@ import com.financetracker.entity.Category;
 import com.financetracker.entity.User;
 import com.financetracker.exception.ResourceNotFoundException;
 import com.financetracker.repository.CategoryRepository;
+import com.itextpdf.text.*;
+import com.itextpdf.text.pdf.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.ByteArrayOutputStream;
+import java.io.PrintWriter;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -67,5 +71,86 @@ public class CategoryService {
             .color(c.getColor())
             .icon(c.getIcon())
             .build();
+    }
+
+    // ── CSV Export ────────────────────────────────────────────────────────────
+    public byte[] exportToCsvBytes(User user) {
+        List<Category> categories = categoryRepository.findByUserId(user.getId());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        PrintWriter writer = new PrintWriter(baos);
+        writer.println("name,type,color,icon");
+        for (Category c : categories) {
+            writer.printf("%s,%s,%s,%s%n",
+                escapeCsv(c.getName()), c.getType().name(), c.getColor(), c.getIcon());
+        }
+        writer.flush();
+        return baos.toByteArray();
+    }
+
+    // ── PDF Export ────────────────────────────────────────────────────────────
+    public byte[] exportToPdfBytes(User user) throws Exception {
+        List<Category> categories = categoryRepository.findByUserId(user.getId());
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        Document doc = new Document(PageSize.A4, 36, 36, 50, 36);
+        PdfWriter.getInstance(doc, baos);
+        doc.open();
+
+        Font titleFont = new Font(Font.FontFamily.HELVETICA, 18, Font.BOLD, BaseColor.BLACK);
+        Paragraph title = new Paragraph("Category Report", titleFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+        title.setSpacingAfter(4);
+        doc.add(title);
+
+        Font subFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL, new BaseColor(100, 100, 100));
+        Paragraph sub = new Paragraph("User: " + user.getEmail(), subFont);
+        sub.setAlignment(Element.ALIGN_CENTER);
+        sub.setSpacingAfter(16);
+        doc.add(sub);
+
+        PdfPTable table = new PdfPTable(4);
+        table.setWidthPercentage(100);
+        table.setWidths(new float[]{3f, 2f, 2f, 2f});
+
+        Font headerFont = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD, BaseColor.WHITE);
+        BaseColor headerBg = new BaseColor(30, 30, 30);
+        for (String h : new String[]{"Name", "Type", "Color", "Icon"}) {
+            PdfPCell cell = new PdfPCell(new Phrase(h, headerFont));
+            cell.setBackgroundColor(headerBg);
+            cell.setPadding(8);
+            cell.setBorder(Rectangle.NO_BORDER);
+            table.addCell(cell);
+        }
+
+        Font rowFont = new Font(Font.FontFamily.HELVETICA, 9, Font.NORMAL, BaseColor.BLACK);
+        Font incomeFont = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD, new BaseColor(234, 88, 12));
+        Font expenseFont = new Font(Font.FontFamily.HELVETICA, 9, Font.BOLD, BaseColor.BLACK);
+        BaseColor rowAlt = new BaseColor(248, 248, 248);
+
+        for (int i = 0; i < categories.size(); i++) {
+            Category c = categories.get(i);
+            BaseColor rowBg = (i % 2 == 0) ? BaseColor.WHITE : rowAlt;
+            boolean isIncome = "INCOME".equals(c.getType().name());
+            Font typeFont = isIncome ? incomeFont : expenseFont;
+
+            String[] vals = {c.getName(), c.getType().name(), c.getColor(), c.getIcon()};
+            for (int j = 0; j < vals.length; j++) {
+                Font f = (j == 1) ? typeFont : rowFont;
+                PdfPCell cell = new PdfPCell(new Phrase(vals[j] != null ? vals[j] : "", f));
+                cell.setBackgroundColor(rowBg);
+                cell.setPadding(7);
+                cell.setBorder(Rectangle.BOTTOM);
+                cell.setBorderColor(new BaseColor(230, 230, 230));
+                table.addCell(cell);
+            }
+        }
+        doc.add(table);
+        doc.close();
+        return baos.toByteArray();
+    }
+
+    private String escapeCsv(String value) {
+        if (value == null) return "";
+        if (value.contains(",") || value.contains("\"")) return "\"" + value.replace("\"", "\"\"") + "\"";
+        return value;
     }
 }
