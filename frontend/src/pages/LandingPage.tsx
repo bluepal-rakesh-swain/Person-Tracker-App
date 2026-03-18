@@ -437,7 +437,7 @@ export default function LandingPage() {
             <div className="w-10 h-10 bg-orange-500 rounded-xl flex items-center justify-center shadow-lg shadow-orange-500/40 group-hover:scale-110 transition-transform duration-500">
               <TrendingUp size={20} className="text-black" strokeWidth={3} />
             </div>
-            <span className="font-black text-white text-xl tracking-tighter uppercase">Vault<span className="text-orange-500">.</span></span>
+            <span className="font-black text-white text-xl tracking-tighter uppercase">Personal Finance Tracker<span className="text-orange-500">.</span></span>
           </Link>
 
           <nav className="hidden md:flex items-center gap-10">
@@ -521,7 +521,7 @@ export default function LandingPage() {
              </div>
              {/* Decorative Elements */}
              <div className="absolute -top-6 -right-6 w-24 h-24 bg-orange-500/20 rounded-full blur-2xl" />
-             <div className="absolute -bottom-10 -left-10 text-orange-500/10 font-black text-9xl select-none">VAULT</div>
+             <div className="absolute -bottom-10 -left-10 text-orange-500/10 font-black text-9xl select-none">Personal Finance Tracker</div>
           </div>
         </div>
       </section>
@@ -577,7 +577,7 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-orange-500 rounded-2xl flex items-center justify-center">
                 <TrendingUp size={24} className="text-black" strokeWidth={3} />
               </div>
-              <span className="font-black text-white text-3xl tracking-tighter uppercase">Vault<span className="text-orange-500">.</span></span>
+              <span className="font-black text-white text-3xl tracking-tighter uppercase">Personal Finance Tracker<span className="text-orange-500">.</span></span>
             </Link>
             <div className="flex gap-12">
                {['About', 'Privacy', 'Legal', 'Contact'].map(l => (
