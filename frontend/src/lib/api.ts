@@ -128,6 +128,8 @@ export const categoryApi = {
 export const transactionApi = {
   getAll: (params?: { start?: string; end?: string; categoryId?: number }) =>
     api.get('/transactions', { params }),
+  getPaged: (params: { start?: string; end?: string; categoryId?: number; page?: number; size?: number; sortBy?: string; sortDir?: string }) =>
+    api.get('/transactions/paged', { params }),
   create: (data: { categoryId: number; amount: number; description: string; date: string; type: string }) =>
     api.post('/transactions', data),
 }

@@ -1,6 +1,7 @@
 package com.financetracker.service;
 
 import com.financetracker.dto.request.TransactionRequest;
+import com.financetracker.dto.response.PagedResponse;
 import com.financetracker.dto.response.TransactionResponse;
 import com.financetracker.entity.Budget;
 import com.financetracker.entity.Category;
@@ -24,6 +25,10 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 @Service
 @RequiredArgsConstructor
@@ -113,6 +118,61 @@ public class TransactionService {
             Category cat = categoryRepository.findById(tx.getCategoryId()).orElse(null);
             return toResponse(tx, cat);
         }).collect(Collectors.toList());
+    }
+
+    public PagedResponse<TransactionResponse> getFilteredPaged(
+            User user, LocalDate start, LocalDate end, Long categoryId,
+            int page, int size, String sortBy, String sortDir) {
+
+        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String field = switch (sortBy) {
+            case "amount" -> "amount";
+            case "type" -> "type";
+            case "categoryName" -> "categoryId";
+            default -> "date";
+        };
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, field));
+        Page<Transaction> txPage = transactionRepository.findFilteredPaged(
+                user.getId(), start, end, categoryId, pageable);
+
+        List<TransactionResponse> content = txPage.getContent().stream().map(tx -> {
+            Category cat = categoryRepository.findById(tx.getCategoryId()).orElse(null);
+            return toResponse(tx, cat);
+        }).collect(Collectors.toList());
+
+        return PagedResponse.<TransactionResponse>builder()
+                .content(content)
+                .page(txPage.getNumber())
+                .size(txPage.getSize())
+                .totalElements(txPage.getTotalElements())
+                .totalPages(txPage.getTotalPages())
+                .last(txPage.isLast())
+                .build();
+    }
+
+    public PagedResponse<TransactionResponse> getAllPlatformPaged(int page, int size, String sortBy, String sortDir) {
+        Sort.Direction dir = "asc".equalsIgnoreCase(sortDir) ? Sort.Direction.ASC : Sort.Direction.DESC;
+        String field = switch (sortBy) {
+            case "amount" -> "amount";
+            case "type" -> "type";
+            default -> "date";
+        };
+        Pageable pageable = PageRequest.of(page, size, Sort.by(dir, field));
+        Page<Transaction> txPage = transactionRepository.findAll(pageable);
+
+        List<TransactionResponse> content = txPage.getContent().stream().map(tx -> {
+            Category cat = categoryRepository.findById(tx.getCategoryId()).orElse(null);
+            return toResponse(tx, cat);
+        }).collect(Collectors.toList());
+
+        return PagedResponse.<TransactionResponse>builder()
+                .content(content)
+                .page(txPage.getNumber())
+                .size(txPage.getSize())
+                .totalElements(txPage.getTotalElements())
+                .totalPages(txPage.getTotalPages())
+                .last(txPage.isLast())
+                .build();
     }
 
     public List<TransactionResponse> getAllPlatform() {

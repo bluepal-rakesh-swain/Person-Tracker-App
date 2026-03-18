@@ -2,6 +2,8 @@ package com.financetracker.repository;
 
 import com.financetracker.entity.Transaction;
 import com.financetracker.entity.TransactionType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,6 +26,21 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
         @Param("start") LocalDate start,
         @Param("end") LocalDate end,
         @Param("categoryId") Long categoryId
+    );
+
+    @Query("""
+        SELECT t FROM Transaction t
+        WHERE t.userId = :userId
+          AND (:start IS NULL OR t.date >= :start)
+          AND (:end IS NULL OR t.date <= :end)
+          AND (:categoryId IS NULL OR t.categoryId = :categoryId)
+        """)
+    Page<Transaction> findFilteredPaged(
+        @Param("userId") Long userId,
+        @Param("start") LocalDate start,
+        @Param("end") LocalDate end,
+        @Param("categoryId") Long categoryId,
+        Pageable pageable
     );
 
     @Query("""
@@ -89,6 +106,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     );
 
     List<Transaction> findByUserIdOrderByDateDesc(Long userId);
+
+    Page<Transaction> findByUserId(Long userId, Pageable pageable);
 
     // ── Platform-wide (admin) queries ──────────────────────────────────────────
 

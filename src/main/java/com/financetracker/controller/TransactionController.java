@@ -2,6 +2,7 @@ package com.financetracker.controller;
 
 import com.financetracker.dto.ApiResponse;
 import com.financetracker.dto.request.TransactionRequest;
+import com.financetracker.dto.response.PagedResponse;
 import com.financetracker.dto.response.TransactionResponse;
 import com.financetracker.entity.Role;
 import com.financetracker.entity.User;
@@ -48,5 +49,25 @@ public class TransactionController {
             return ResponseEntity.ok(ApiResponse.ok(transactionService.getAllPlatform()));
         }
         return ResponseEntity.ok(ApiResponse.ok(transactionService.getFiltered(user, start, end, categoryId)));
+    }
+
+    @GetMapping("/paged")
+    @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    public ResponseEntity<ApiResponse<PagedResponse<TransactionResponse>>> getPaged(
+        @AuthenticationPrincipal User user,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
+        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end,
+        @RequestParam(required = false) Long categoryId,
+        @RequestParam(defaultValue = "0") int page,
+        @RequestParam(defaultValue = "10") int size,
+        @RequestParam(defaultValue = "date") String sortBy,
+        @RequestParam(defaultValue = "desc") String sortDir
+    ) {
+        if (user.getRole() == Role.ADMIN) {
+            return ResponseEntity.ok(ApiResponse.ok(
+                transactionService.getAllPlatformPaged(page, size, sortBy, sortDir)));
+        }
+        return ResponseEntity.ok(ApiResponse.ok(
+            transactionService.getFilteredPaged(user, start, end, categoryId, page, size, sortBy, sortDir)));
     }
 }
