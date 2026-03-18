@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
@@ -36,6 +36,7 @@ export default function Transactions() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'ADMIN'
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const qc = useQueryClient()
   const { show } = useToast()
 
@@ -43,10 +44,18 @@ export default function Transactions() {
   const [startDate, setStartDate] = useState('')
   const [endDate, setEndDate] = useState('')
   const [filterCat, setFilterCat] = useState<number | undefined>()
+  const [search, setSearch] = useState(searchParams.get('search') || '')
   const [page, setPage] = useState(0)
   const [sortBy, setSortBy] = useState<SortField>('date')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [saveError, setSaveError] = useState('')
+
+  // Sync search from URL param
+  useEffect(() => {
+    const s = searchParams.get('search') || ''
+    setSearch(s)
+    setPage(0)
+  }, [searchParams])
 
   const handleSort = (field: SortField) => {
     if (sortBy === field) setSortDir(d => d === 'asc' ? 'desc' : 'asc')
@@ -78,7 +87,15 @@ export default function Transactions() {
   })
 
   const pagedData = txRes?.data?.data
-  const transactions: Transaction[] = pagedData?.content || []
+  const rawTransactions: Transaction[] = pagedData?.content || []
+  // Client-side search filter on description + categoryName
+  const transactions: Transaction[] = search
+    ? rawTransactions.filter(tx =>
+        tx.description?.toLowerCase().includes(search.toLowerCase()) ||
+        tx.categoryName?.toLowerCase().includes(search.toLowerCase()) ||
+        tx.type?.toLowerCase().includes(search.toLowerCase())
+      )
+    : rawTransactions
   const totalPages: number = pagedData?.totalPages || 0
   const totalElements: number = pagedData?.totalElements || 0
   const categories: Category[] = catRes?.data?.data || []
@@ -211,8 +228,23 @@ export default function Transactions() {
           <option value="">All Categories</option>
           {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
         </select>
-        {(startDate || endDate || filterCat) && (
-          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCat(undefined); setPage(0) }}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl border border-slate-100 bg-slate-50 focus-within:border-orange-500 focus-within:bg-white transition-all">
+          <Search size={13} className="text-slate-400 shrink-0" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setPage(0) }}
+            placeholder="Search..."
+            className="bg-transparent outline-none text-[11px] font-bold uppercase w-36 placeholder:text-slate-300"
+          />
+          {search && (
+            <button onClick={() => { setSearch(''); setPage(0); navigate('/transactions') }}>
+              <X size={12} className="text-slate-400 hover:text-red-500" />
+            </button>
+          )}
+        </div>
+        {(startDate || endDate || filterCat || search) && (
+          <button onClick={() => { setStartDate(''); setEndDate(''); setFilterCat(undefined); setSearch(''); setPage(0); navigate('/transactions') }}
             className="text-[10px] font-black text-red-500 uppercase tracking-widest hover:underline px-4">
             Reset
           </button>
