@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 @Service
@@ -32,7 +33,7 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final CategoryRepository categoryRepository;
     private final BudgetRepository budgetRepository;
-    private final EmailService emailService;
+    private final WebSocketNotificationService webSocketNotificationService;
 
     @Transactional
     public TransactionResponse create(User user, TransactionRequest request) {
@@ -50,9 +51,12 @@ public class TransactionService {
 
         TransactionResponse response = toResponse(transactionRepository.save(tx), category);
 
-        // Check budget alert after saving (only for EXPENSE transactions)
+        // Fire budget alert check async — don't block the HTTP response
         if (TransactionType.EXPENSE == request.getType()) {
-            checkAndSendBudgetAlert(user, category, request.getDate());
+            final User u = user;
+            final Category c = category;
+            final LocalDate d = request.getDate();
+            CompletableFuture.runAsync(() -> checkAndSendBudgetAlert(u, c, d));
         }
 
         return response;
@@ -84,9 +88,8 @@ public class TransactionService {
 
             // Send alert when crossing 80% threshold
             if (usagePercent >= 80.0) {
-                emailService.sendBudgetAlertEmail(
+                webSocketNotificationService.sendBudgetAlert(
                     user.getEmail(),
-                    user.getFullName(),
                     category.getName(),
                     usagePercent,
                     spent,

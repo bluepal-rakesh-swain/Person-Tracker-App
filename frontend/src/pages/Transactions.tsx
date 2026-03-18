@@ -411,9 +411,13 @@ export default function Transactions() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard-summary'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-monthly'] })
+      qc.invalidateQueries({ queryKey: ['dashboard-categories'] })
+      qc.invalidateQueries({ queryKey: ['transactions-recent'] })
+      qc.invalidateQueries({ queryKey: ['budgets'] })
       setShowModal(false)
       reset()
-      show('Transaction written to ledger')
+      show('Transaction saved successfully')
     },
     onError: (e: any) => setSaveError(e.response?.data?.message || 'Write error')
   })

@@ -776,16 +776,18 @@
 
 
 
-import { useState } from 'react'
+import { useState, useCallback, useRef } from 'react'
+import { createPortal } from 'react-dom'
 import { NavLink, Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ArrowLeftRight, Tag, Target,
-  LogOut, Menu, TrendingUp, ChevronRight, ChevronLeft, 
-  Users, BarChart3, Settings, Bell, Search
+  LogOut, Menu, TrendingUp,
+  Users, BarChart3, Bell, Search, X, AlertTriangle
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
+import { useNotifications, type BudgetAlert } from '@/hooks/useNotifications'
 
 const baseNavItems = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
@@ -796,13 +798,35 @@ const baseNavItems = [
 ]
 
 export default function Layout() {
-  const { user, logout } = useAuth()
+  const { user, logout, accessToken } = useAuth()
   const navigate = useNavigate()
   const [mobileOpen, setMobileOpen] = useState(false)
   const [collapsed, setCollapsed] = useState(false)
   const [avatarOpen, setAvatarOpen] = useState(false)
+  const [bellOpen, setBellOpen] = useState(false)
+  const [alerts, setAlerts] = useState<BudgetAlert[]>([])
+  const [seenCount, setSeenCount] = useState(0)
+  const alertsRef = useRef<BudgetAlert[]>([])
+  const unreadCount = alerts.length - seenCount
   const isAdmin = user?.role === 'ADMIN'
   const navItems = isAdmin ? [] : baseNavItems
+
+  const handleAlert = useCallback((alert: BudgetAlert) => {
+    setAlerts(prev => {
+      const next = [alert, ...prev].slice(0, 20)
+      alertsRef.current = next
+      return next
+    })
+  }, [])
+
+  useNotifications(accessToken, handleAlert)
+
+  const handleBellOpen = () => {
+    const opening = !bellOpen
+    setBellOpen(opening)
+    if (opening) setSeenCount(alertsRef.current.length)
+    setAvatarOpen(false)
+  }
 
   const handleLogout = () => { logout(); navigate('/login') }
 
@@ -957,15 +981,28 @@ export default function Layout() {
           </div>
 
           <div className="flex items-center gap-5">
-            <button className="relative p-2 text-slate-400 hover:text-orange-500 transition-colors">
-              <Bell size={20} />
-              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />
-            </button>
+            {/* Bell */}
+            <div className="relative">
+              <button
+                onClick={handleBellOpen}
+                className="relative p-2 text-slate-400 hover:text-orange-500 transition-colors"
+                aria-label="Notifications"
+              >
+                <Bell size={20} />
+                {unreadCount > 0 ? (
+                  <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-orange-500 rounded-full border-2 border-white text-white text-[10px] font-black flex items-center justify-center leading-none">
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </span>
+                ) : (
+                  <span className="absolute top-2 right-2 w-2 h-2 bg-orange-500 rounded-full border-2 border-white" />
+                )}
+              </button>
+            </div>
             
             <div className="h-8 w-[1px] bg-gray-100" />
 
             <button 
-              onClick={() => setAvatarOpen(!avatarOpen)}
+              onClick={() => { setAvatarOpen(!avatarOpen); setBellOpen(false) }}
               className="flex items-center gap-3 pl-1 pr-4 py-1.5 rounded-full bg-gray-50 border border-gray-100 hover:border-orange-500/40 transition-all"
             >
               <div className="w-8 h-8 rounded-full bg-orange-500 flex items-center justify-center text-white font-black text-xs">
@@ -992,6 +1029,74 @@ export default function Layout() {
            </div>
         </main>
       </div>
+
+      {/* Bell Notification Dropdown — Portal so it escapes overflow:hidden */}
+      {createPortal(
+        <AnimatePresence>
+          {bellOpen && (
+            <>
+              <div className="fixed inset-0 z-[9998]" onClick={() => setBellOpen(false)} />
+              <motion.div
+                initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className="fixed right-8 top-[72px] z-[9999] w-80 bg-white border border-gray-100 rounded-2xl shadow-[0_20px_60px_rgba(0,0,0,0.15)]"
+              >
+                <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+                  <div className="flex items-center gap-2">
+                    <Bell size={14} className="text-orange-500" />
+                    <span className="text-[11px] font-black text-black uppercase tracking-widest">Notifications</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {alerts.length > 0 && (
+                      <button
+                        onClick={() => { setAlerts([]); alertsRef.current = []; setSeenCount(0) }}
+                        className="text-[10px] font-black text-slate-400 hover:text-red-500 uppercase tracking-wider transition-colors"
+                      >
+                        Clear all
+                      </button>
+                    )}
+                    <button onClick={() => setBellOpen(false)} className="p-1 text-slate-400 hover:text-black transition-colors">
+                      <X size={14} />
+                    </button>
+                  </div>
+                </div>
+
+                <div className="max-h-96 overflow-y-auto rounded-b-2xl">
+                  {alerts.length === 0 ? (
+                    <div className="py-10 flex flex-col items-center gap-3 text-center px-6">
+                      <div className="w-12 h-12 rounded-2xl bg-gray-50 flex items-center justify-center">
+                        <Bell size={20} className="text-gray-200" />
+                      </div>
+                      <p className="text-[11px] font-black text-slate-400 uppercase tracking-widest">No alerts yet</p>
+                      <p className="text-[10px] text-slate-300 uppercase">Budget alerts will appear here</p>
+                    </div>
+                  ) : (
+                    alerts.map(alert => (
+                      <div key={alert.id} className="flex items-start gap-3 px-5 py-4 border-b border-gray-50 hover:bg-orange-50/40 transition-colors">
+                        <div className="w-8 h-8 rounded-xl bg-orange-100 flex items-center justify-center flex-shrink-0 mt-0.5">
+                          <AlertTriangle size={14} className="text-orange-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="text-[11px] font-black text-black uppercase tracking-tight">{alert.categoryName}</p>
+                          <p className="text-[10px] text-slate-500 mt-0.5">
+                            Budget at <span className="text-orange-500 font-black">{alert.usagePercent.toFixed(1)}%</span> — {alert.monthYear}
+                          </p>
+                          <p className="text-[9px] text-slate-300 mt-1 uppercase tracking-wider">
+                            ₹{(alert.spent / 100).toFixed(2)} of ₹{(alert.limit / 100).toFixed(2)}
+                          </p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>,
+        document.body
+      )}
 
       {/* Mobile Sidebar */}
       <AnimatePresence>
