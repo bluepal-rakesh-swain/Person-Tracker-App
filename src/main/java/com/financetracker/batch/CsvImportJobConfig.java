@@ -1,16 +1,14 @@
 package com.financetracker.batch;
 
-import org.springframework.batch.core.configuration.annotation.EnableBatchProcessing;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Spring Batch is enabled for its infrastructure (JobRepository, JobLauncher, etc.).
- * The actual CSV import logic runs directly in CsvImportService using
- * FlatFileItemReader inline — this avoids complex StepScope wiring while
- * still leveraging Spring Batch's reader/processor/writer pipeline.
+ * Spring Batch infrastructure (JobRepository, JobLauncher) is
+ * auto-configured by spring-boot-starter-batch in Spring Boot 3.x.
+ * @EnableBatchProcessing is intentionally omitted — it conflicts with
+ * Boot's auto-configuration and breaks springdoc in Boot 3.
  */
 @Configuration
-@EnableBatchProcessing
 public class CsvImportJobConfig {
     // Batch infrastructure beans (JobRepository, JobLauncher) are
     // auto-configured by spring-boot-starter-batch.

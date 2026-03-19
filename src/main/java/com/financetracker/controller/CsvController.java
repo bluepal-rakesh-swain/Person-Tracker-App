@@ -6,6 +6,8 @@ import com.financetracker.entity.User;
 import com.financetracker.service.CsvExportService;
 import com.financetracker.service.CsvImportService;
 import com.financetracker.service.PdfExportService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -21,6 +23,7 @@ import java.io.ByteArrayOutputStream;
 @RestController
 @RequiredArgsConstructor
 @RequestMapping("/api")
+@Tag(name = "CSV / PDF Export", description = "Import and export transactions as CSV or PDF")
 public class CsvController {
 
     private final CsvImportService csvImportService;
@@ -29,6 +32,7 @@ public class CsvController {
 
     @PostMapping("/import/csv")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Import transactions from CSV", description = "Upload a CSV file with column mapping JSON")
     public ResponseEntity<ApiResponse<ImportResult>> importCsv(
         @AuthenticationPrincipal User user,
         @RequestParam("file") MultipartFile file,
@@ -40,6 +44,7 @@ public class CsvController {
 
     @GetMapping("/export/csv")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Export transactions as CSV")
     public void exportCsv(
         @AuthenticationPrincipal User user,
         HttpServletResponse response
@@ -51,6 +56,7 @@ public class CsvController {
 
     @GetMapping("/export/pdf")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Export transactions as PDF")
     public ResponseEntity<byte[]> exportPdf(
         @AuthenticationPrincipal User user
     ) throws Exception {

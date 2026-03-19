@@ -5,6 +5,8 @@ import com.financetracker.dto.request.CategoryRequest;
 import com.financetracker.dto.response.CategoryResponse;
 import com.financetracker.entity.User;
 import com.financetracker.service.CategoryService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
@@ -20,18 +22,21 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/categories")
 @RequiredArgsConstructor
+@Tag(name = "Categories", description = "Manage transaction categories")
 public class CategoryController {
 
     private final CategoryService categoryService;
 
     @GetMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Get all categories")
     public ResponseEntity<ApiResponse<List<CategoryResponse>>> getAll(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(ApiResponse.ok(categoryService.getAll(user)));
     }
 
     @PostMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Create category")
     public ResponseEntity<ApiResponse<CategoryResponse>> create(
         @AuthenticationPrincipal User user,
         @Valid @RequestBody CategoryRequest request
@@ -42,6 +47,7 @@ public class CategoryController {
 
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Update category")
     public ResponseEntity<ApiResponse<CategoryResponse>> update(
         @AuthenticationPrincipal User user,
         @PathVariable Long id,
@@ -52,6 +58,7 @@ public class CategoryController {
 
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Delete category")
     public ResponseEntity<ApiResponse<Void>> delete(
         @AuthenticationPrincipal User user,
         @PathVariable Long id
@@ -62,6 +69,7 @@ public class CategoryController {
 
     @GetMapping("/export/csv")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Export categories as CSV")
     public ResponseEntity<byte[]> exportCsv(@AuthenticationPrincipal User user) {
         byte[] bytes = categoryService.exportToCsvBytes(user);
         HttpHeaders headers = new HttpHeaders();
@@ -73,6 +81,7 @@ public class CategoryController {
 
     @GetMapping("/export/pdf")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Export categories as PDF")
     public ResponseEntity<byte[]> exportPdf(@AuthenticationPrincipal User user) throws Exception {
         byte[] bytes = categoryService.exportToPdfBytes(user);
         HttpHeaders headers = new HttpHeaders();

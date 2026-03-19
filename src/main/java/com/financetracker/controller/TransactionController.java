@@ -7,6 +7,8 @@ import com.financetracker.dto.response.TransactionResponse;
 import com.financetracker.entity.Role;
 import com.financetracker.entity.User;
 import com.financetracker.service.TransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
@@ -22,13 +24,14 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/transactions")
 @RequiredArgsConstructor
-
+@Tag(name = "Transactions", description = "Create and retrieve financial transactions")
 public class TransactionController {
 
     private final TransactionService transactionService;
 
     @PostMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Create transaction", description = "Add a new income or expense transaction")
     public ResponseEntity<ApiResponse<TransactionResponse>> create(
         @AuthenticationPrincipal User user,
         @Valid @RequestBody TransactionRequest request
@@ -39,6 +42,7 @@ public class TransactionController {
 
     @GetMapping
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Get all transactions", description = "Returns all transactions with optional date/category filters")
     public ResponseEntity<ApiResponse<List<TransactionResponse>>> getAll(
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
@@ -53,6 +57,7 @@ public class TransactionController {
 
     @GetMapping("/paged")
     @PreAuthorize("hasRole('USER') or hasRole('ADMIN')")
+    @Operation(summary = "Get paged transactions", description = "Returns paginated and sorted transactions")
     public ResponseEntity<ApiResponse<PagedResponse<TransactionResponse>>> getPaged(
         @AuthenticationPrincipal User user,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,

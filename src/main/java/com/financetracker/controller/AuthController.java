@@ -13,6 +13,9 @@ import com.financetracker.entity.User;
 import com.financetracker.service.AuthService;
 import com.financetracker.service.EmailVerificationService;
 import com.financetracker.service.PasswordResetService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
+@Tag(name = "Authentication", description = "Register, login, logout, email verification, password reset")
 public class AuthController {
 
     private final AuthService authService;
@@ -31,6 +35,7 @@ public class AuthController {
     private final EmailVerificationService emailVerificationService;
 
     @PostMapping("/register")
+    @Operation(summary = "Register a new user", description = "Creates account and sends OTP to email")
     public ResponseEntity<ApiResponse<RegisterResponse>> register(@Valid @RequestBody RegisterRequest request) {
         RegisterResponse response = authService.register(request);
         return ResponseEntity.status(HttpStatus.CREATED)
@@ -38,6 +43,7 @@ public class AuthController {
     }
 
     @PostMapping("/verify-email")
+    @Operation(summary = "Verify email OTP", description = "Verifies OTP and returns JWT tokens")
     public ResponseEntity<ApiResponse<AuthResponse>> verifyEmail(@Valid @RequestBody VerifyOtpRequest request) {
         emailVerificationService.verifyOtp(request.getEmail(), request.getOtp());
         // After verification, issue tokens so the user is logged in immediately
@@ -46,12 +52,14 @@ public class AuthController {
     }
 
     @PostMapping("/login")
+    @Operation(summary = "Login", description = "Authenticate with email and password, returns access + refresh tokens")
     public ResponseEntity<ApiResponse<AuthResponse>> login(@Valid @RequestBody LoginRequest request) {
         AuthResponse response = authService.login(request);
         return ResponseEntity.ok(ApiResponse.ok(response));
     }
 
     @PostMapping("/refresh")
+    @Operation(summary = "Refresh access token", description = "Exchange refresh token for a new access token")
     public ResponseEntity<ApiResponse<AuthResponse>> refresh(@Valid @RequestBody RefreshRequest request) {
         AuthResponse response = authService.refresh(request);
         return ResponseEntity.ok(ApiResponse.ok(response));
@@ -59,18 +67,21 @@ public class AuthController {
 
     @PostMapping("/logout")
     @PreAuthorize("isAuthenticated()")
+    @Operation(summary = "Logout", description = "Revokes all refresh tokens for the current user")
     public ResponseEntity<ApiResponse<Void>> logout(@AuthenticationPrincipal User user) {
         authService.logout(user.getId());
         return ResponseEntity.ok(ApiResponse.ok("Logged out successfully", null));
     }
 
     @PostMapping("/forgot-password")
+    @Operation(summary = "Forgot password", description = "Sends password reset link to email")
     public ResponseEntity<ApiResponse<Void>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         passwordResetService.forgotPassword(request.getEmail());
         return ResponseEntity.ok(ApiResponse.ok("Password reset email sent. Check your inbox.", null));
     }
 
     @PostMapping("/reset-password")
+    @Operation(summary = "Reset password", description = "Resets password using the token from email")
     public ResponseEntity<ApiResponse<Void>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         passwordResetService.resetPassword(request.getToken(), request.getNewPassword());
         return ResponseEntity.ok(ApiResponse.ok("Password reset successfully", null));
