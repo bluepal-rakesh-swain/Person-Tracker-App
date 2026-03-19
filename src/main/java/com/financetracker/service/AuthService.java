@@ -32,6 +32,19 @@ public class AuthService {
     @Transactional
     public RegisterResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
+            // Check if the existing user has not verified their email yet
+            User existing = userRepository.findByEmail(request.getEmail()).orElseThrow();
+            if (!existing.isEmailVerified()) {
+                // Resend OTP so they can complete verification
+                emailVerificationService.sendOtp(existing);
+                return RegisterResponse.builder()
+                    .id(existing.getId())
+                    .email(existing.getEmail())
+                    .fullName(existing.getFullName())
+                    .currency(existing.getCurrency())
+                    .role(existing.getRole().name())
+                    .build();
+            }
             throw new IllegalArgumentException("Email already registered");
         }
         User user = User.builder()
@@ -41,6 +54,7 @@ public class AuthService {
             .currency(request.getCurrency())
             .role(Role.USER)
             .emailVerified(false)
+            .enabled(true)
             .build();
         user = userRepository.save(user);
 

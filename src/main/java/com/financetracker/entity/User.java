@@ -32,5 +32,6 @@ public class User {
     private boolean emailVerified;
 
     @Column(columnDefinition = "boolean default true")
+    @Builder.Default
     private boolean enabled = true;
 }
