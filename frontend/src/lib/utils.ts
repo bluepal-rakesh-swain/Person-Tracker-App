@@ -35,7 +35,9 @@ export function currentYear(): number {
 }
 
 export function formatDate(date: string): string {
-  return new Date(date).toLocaleDateString('en-IN', {
+  // Parse as local date to avoid UTC midnight shifting to previous day in IST
+  const [year, month, day] = String(date).slice(0, 10).split('-').map(Number)
+  return new Date(year, month - 1, day).toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',

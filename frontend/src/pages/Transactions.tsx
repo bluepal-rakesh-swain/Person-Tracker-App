@@ -50,7 +50,9 @@ export default function Transactions() {
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
   const [saveError, setSaveError] = useState('')
 
-  // Sync search from URL param
+  const PAGE_SIZE = 10
+
+  // Sync search from URL param (navbar search)
   useEffect(() => {
     const s = searchParams.get('search') || ''
     setSearch(s)
@@ -63,20 +65,8 @@ export default function Transactions() {
     setPage(0)
   }
 
-  const { data: txRes, isLoading } = useQuery({
-    queryKey: ['transactions-paged', startDate, endDate, filterCat, page, sortBy, sortDir],
-    queryFn: () => transactionApi.getPaged({
-      start: startDate || undefined,
-      end: endDate || undefined,
-      categoryId: filterCat,
-      page,
-      size: 10,
-      sortBy,
-      sortDir,
-    }),
-  })
-
-  const { data: allTxRes } = useQuery({
+  // Always fetch ALL transactions — filter client-side to avoid backend date issues
+  const { data: allTxRes, isLoading } = useQuery({
     queryKey: ['transactions'],
     queryFn: () => transactionApi.getAll({}),
   })
@@ -86,20 +76,53 @@ export default function Transactions() {
     queryFn: () => categoryApi.getAll(),
   })
 
-  const pagedData = txRes?.data?.data
-  const rawTransactions: Transaction[] = pagedData?.content || []
-  // Client-side search filter on description + categoryName
-  const transactions: Transaction[] = search
-    ? rawTransactions.filter(tx =>
-        tx.description?.toLowerCase().includes(search.toLowerCase()) ||
-        tx.categoryName?.toLowerCase().includes(search.toLowerCase()) ||
-        tx.type?.toLowerCase().includes(search.toLowerCase())
-      )
-    : rawTransactions
-  const totalPages: number = pagedData?.totalPages || 0
-  const totalElements: number = pagedData?.totalElements || 0
   const categories: Category[] = catRes?.data?.data || []
   const allTransactions: Transaction[] = allTxRes?.data?.data || []
+
+  // Normalize date to YYYY-MM-DD string regardless of how backend returns it
+  const toIso = (d: unknown): string => {
+    if (!d) return ''
+    if (Array.isArray(d)) {
+      // Jackson array format [2026, 3, 15]
+      const [y, m, day] = d as number[]
+      return `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
+    // Already a string like "2026-03-15"
+    return String(d).slice(0, 10)
+  }
+
+  // Client-side filtering
+  const filtered: Transaction[] = allTransactions.filter(tx => {
+    const txDate = toIso(tx.date)
+    if (startDate && txDate < startDate) return false
+    if (endDate && txDate > endDate) return false
+    if (filterCat && tx.categoryId !== filterCat) return false
+    if (search) {
+      const q = search.toLowerCase()
+      if (
+        !tx.description?.toLowerCase().includes(q) &&
+        !tx.categoryName?.toLowerCase().includes(q) &&
+        !tx.type?.toLowerCase().includes(q)
+      ) return false
+    }
+    return true
+  })
+
+  // Client-side sorting
+  const sorted: Transaction[] = [...filtered].sort((a, b) => {
+    let cmp = 0
+    if (sortBy === 'date') cmp = a.date.localeCompare(b.date)
+    else if (sortBy === 'amount') cmp = a.amount - b.amount
+    else if (sortBy === 'type') cmp = a.type.localeCompare(b.type)
+    else if (sortBy === 'categoryName') cmp = (a.categoryName || '').localeCompare(b.categoryName || '')
+    return sortDir === 'asc' ? cmp : -cmp
+  })
+
+  // Client-side pagination
+  const totalElements = sorted.length
+  const totalPages = Math.ceil(totalElements / PAGE_SIZE)
+  const transactions: Transaction[] = sorted.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE)
+
   const totalIncome = allTransactions.filter(t => t.type === 'INCOME').reduce((s, t) => s + t.amount, 0)
   const totalExpenses = allTransactions.filter(t => t.type === 'EXPENSE').reduce((s, t) => s + t.amount, 0)
 
@@ -137,7 +160,6 @@ export default function Transactions() {
       amount: Math.round(data.amount * 100),
     }),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['transactions-paged'] })
       qc.invalidateQueries({ queryKey: ['transactions'] })
       qc.invalidateQueries({ queryKey: ['dashboard-summary'] })
       qc.invalidateQueries({ queryKey: ['dashboard-monthly'] })
@@ -333,8 +355,8 @@ export default function Transactions() {
                     <ChevronLeft size={14} />
                   </button>
                   {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const start = Math.max(0, Math.min(page - 2, totalPages - 5))
-                    const p = start + i
+                    const startIdx = Math.max(0, Math.min(page - 2, totalPages - 5))
+                    const p = startIdx + i
                     return (
                       <button key={p} onClick={() => setPage(p)}
                         className={cn(
