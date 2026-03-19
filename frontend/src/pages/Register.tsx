@@ -12,9 +12,14 @@ import {
 import { authApi } from '@/lib/api'
 
 const schema = z.object({
-  fullName: z.string().min(2, 'Full name is required'),
-  email: z.string().email('Please enter a valid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  fullName: z.string().min(2, 'Full name must be at least 2 characters'),
+  email: z.string().min(1, 'Email is required').email('Enter a valid email (e.g. user@example.com)'),
+  password: z.string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(/[A-Z]/, 'Must contain an uppercase letter')
+    .regex(/[a-z]/, 'Must contain a lowercase letter')
+    .regex(/[0-9]/, 'Must contain a number')
+    .regex(/[^A-Za-z0-9]/, 'Must contain a special character (e.g. @, #, !)'),
   currency: z.string().min(1, 'Please select a currency'),
 })
 type FormData = z.infer<typeof schema>

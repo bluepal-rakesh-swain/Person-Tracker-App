@@ -1,12 +1,13 @@
 
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Plus, X, Target, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Activity, Download } from 'lucide-react'
+import { Plus, X, Target, Loader2, AlertTriangle, ChevronLeft, ChevronRight, Activity, Download, Search } from 'lucide-react'
 import { budgetApi, categoryApi } from '@/lib/api'
 import { formatMoney, currentMonthYear, formatMonthYear } from '@/lib/utils'
 import type { Budget, Category } from '@/types'
@@ -104,6 +105,12 @@ export default function Budgets() {
   const isAdmin = user?.role === 'ADMIN'
   const [showModal, setShowModal] = useState(false)
   const [selectedMonth, setSelectedMonth] = useState(currentMonthYear())
+  const [searchParams] = useSearchParams()
+  const [search, setSearch] = useState(searchParams.get('search') || '')
+
+  useEffect(() => {
+    setSearch(searchParams.get('search') || '')
+  }, [searchParams])
 
   const handleExportCsv = async () => {
     try {
@@ -150,7 +157,10 @@ export default function Budgets() {
     queryKey: ['budgets', selectedMonth],
     queryFn: () => budgetApi.getCurrent(selectedMonth),
   })
-  const budgets: Budget[] = (budgetRes?.data?.data || []).filter((b: Budget) => b.monthYear === selectedMonth)
+  const allBudgets: Budget[] = (budgetRes?.data?.data || []).filter((b: Budget) => b.monthYear === selectedMonth)
+  const budgets = search
+    ? allBudgets.filter(b => b.categoryName.toLowerCase().includes(search.toLowerCase()))
+    : allBudgets
 
   const { data: catRes } = useQuery({
     queryKey: ['categories'],
@@ -195,6 +205,21 @@ export default function Budgets() {
             <button onClick={nextMonth} className="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 hover:text-black hover:bg-slate-100 transition-all">
               <ChevronRight size={18} />
             </button>
+            <div className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-50 border border-slate-100 focus-within:border-orange-500 transition-all">
+              <Search size={14} className="text-slate-400 shrink-0" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="SEARCH CATEGORY..."
+                className="bg-transparent border-none outline-none text-[10px] font-black tracking-widest w-40 text-black uppercase placeholder:text-slate-300"
+              />
+              {search && (
+                <button onClick={() => setSearch('')} className="text-slate-300 hover:text-black transition-colors">
+                  <X size={12} />
+                </button>
+              )}
+            </div>
           </div>
         </div>
         {!isAdmin && (

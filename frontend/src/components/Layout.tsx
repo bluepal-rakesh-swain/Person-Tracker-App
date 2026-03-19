@@ -1,6 +1,6 @@
 
 
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink, Outlet, useNavigate, useLocation, useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -13,9 +13,54 @@ import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
 import { useNotifications, type BudgetAlert } from '@/hooks/useNotifications'
 
+const SEARCHABLE_PAGES = ['/transactions', '/budgets', '/categories']
+
+function NavbarSearch() {
+  const navigate = useNavigate()
+  const location = useLocation()
+  const [searchParams] = useSearchParams()
+  const [value, setValue] = useState(searchParams.get('search') || '')
+
+  // Sync input when URL search param changes (e.g. navigating between pages)
+  useEffect(() => {
+    setValue(searchParams.get('search') || '')
+  }, [location.pathname, searchParams])
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      const q = value.trim()
+      // Route to current page if searchable, else default to transactions
+      const target = SEARCHABLE_PAGES.find(p => location.pathname.startsWith(p)) || '/transactions'
+      navigate(q ? `${target}?search=${encodeURIComponent(q)}` : target)
+    }
+  }
+
+  return (
+    <div className="hidden md:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-gray-50 border border-gray-100 focus-within:border-orange-500 focus-within:bg-white transition-all duration-300">
+      <Search size={16} className="text-slate-400" />
+      <input
+        type="text"
+        value={value}
+        onChange={e => setValue(e.target.value)}
+        placeholder="QUERY PROTOCOL..."
+        className="bg-transparent border-none outline-none text-[10px] font-black tracking-widest w-72 text-black uppercase placeholder:text-slate-300"
+        onKeyDown={handleKeyDown}
+      />
+      {value && (
+        <button onClick={() => {
+          setValue('')
+          const target = SEARCHABLE_PAGES.find(p => location.pathname.startsWith(p)) || '/transactions'
+          navigate(target)
+        }} className="text-slate-300 hover:text-black transition-colors">
+          <X size={14} />
+        </button>
+      )}
+    </div>
+  )
+}
+
 const baseNavItems = [
   { to: '/dashboard',    icon: LayoutDashboard, label: 'Dashboard' },
-  
   { to: '/categories',   icon: Tag,             label: 'categories' },
   { to: '/budgets',      icon: Target,          label: 'budgets' },
   { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
@@ -198,20 +243,7 @@ export default function Layout() {
         <header className="flex items-center justify-between px-8 py-5 bg-white/70 backdrop-blur-md border-b border-gray-100">
           <div className="flex items-center gap-4">
              <button className="lg:hidden p-2 text-slate-400" onClick={() => setMobileOpen(true)}><Menu /></button>
-             <div className="hidden md:flex items-center gap-3 px-5 py-2.5 rounded-2xl bg-gray-50 border border-gray-100 focus-within:border-orange-500 focus-within:bg-white transition-all duration-300">
-                <Search size={16} className="text-slate-400" />
-                <input
-                  type="text"
-                  placeholder="QUERY PROTOCOL..."
-                  className="bg-transparent border-none outline-none text-[10px] font-black tracking-widest w-48 text-black uppercase placeholder:text-slate-300"
-                  onKeyDown={e => {
-                    if (e.key === 'Enter') {
-                      const val = (e.target as HTMLInputElement).value.trim()
-                      if (val) navigate(`/transactions?search=${encodeURIComponent(val)}`)
-                    }
-                  }}
-                />
-             </div>
+             <NavbarSearch />
           </div>
 
           <div className="flex items-center gap-5">

@@ -45,7 +45,7 @@ public class DataInitializer implements CommandLineRunner {
         if (!userRepository.existsByEmail("admin@financetracker.com")) {
             User admin = User.builder()
                 .email("admin@financetracker.com")
-                .password(passwordEncoder.encode("admin123"))
+                .password(passwordEncoder.encode("Admin@123"))
                 .fullName("System Admin")
                 .currency("INR")
                 .role(Role.ADMIN)
@@ -53,7 +53,14 @@ public class DataInitializer implements CommandLineRunner {
                 .enabled(true)
                 .build();
             userRepository.save(admin);
-            log.info("Default admin user created: admin@financetracker.com / admin123");
+            log.info("Default admin user created: admin@financetracker.com / Admin@123");
+        } else {
+            // Update password if admin already exists (e.g. was created with old password)
+            userRepository.findByEmail("admin@financetracker.com").ifPresent(admin -> {
+                admin.setPassword(passwordEncoder.encode("Admin@123"));
+                userRepository.save(admin);
+                log.info("Admin password updated to Admin@123");
+            });
         }
     }
 }
