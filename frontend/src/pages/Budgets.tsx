@@ -234,7 +234,7 @@ export default function Budgets() {
             </button>
             <button onClick={() => { reset({ monthYear: selectedMonth }); setShowModal(true) }}
               className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
-              <Plus size={16} /> New Parameter
+              <Plus size={16} /> New Budget
             </button>
           </div>
         )}

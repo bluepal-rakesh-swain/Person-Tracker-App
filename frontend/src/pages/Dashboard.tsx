@@ -1,3 +1,4 @@
+import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { dashboardApi, transactionApi } from '@/lib/api'
 import { useAuth } from '@/contexts/AuthContext'
@@ -52,8 +53,25 @@ export default function Dashboard() {
   const { user } = useAuth()
   const navigate = useNavigate()
   const currency = user?.currency || 'INR'
-  const monthYear = currentMonthYear()
-  const year = currentYear()
+  const [selectedYear, setSelectedYear] = useState<number>(currentYear())
+  const [selectedMonth, setSelectedMonth] = useState(currentMonthYear())
+
+  const YEAR_OPTIONS = (() => {
+    const years: number[] = []
+    for (let y = 2001; y <= 2030; y++) years.push(y)
+    return years
+  })()
+  const MONTH_OPTIONS = (() => {
+    const opts: { label: string; value: string }[] = []
+    const mNames = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+    for (let y = 2030; y >= 2001; y--) {
+      for (let m = 11; m >= 0; m--) {
+        const val = `${y}-${String(m + 1).padStart(2, '0')}`
+        opts.push({ label: `${mNames[m]} ${y}`, value: val })
+      }
+    }
+    return opts
+  })()
 
   const { data: summaryRes, isLoading: loadingSummary } = useQuery({
     queryKey: ['dashboard-summary'],
@@ -62,13 +80,13 @@ export default function Dashboard() {
     refetchOnMount: true,
   })
   const { data: monthlyRes } = useQuery({
-    queryKey: ['dashboard-monthly', year],
-    queryFn: () => dashboardApi.getMonthlyChart(year),
+    queryKey: ['dashboard-monthly', selectedYear],
+    queryFn: () => dashboardApi.getMonthlyChart(selectedYear),
     staleTime: 0,
   })
   const { data: categoryRes } = useQuery({
-    queryKey: ['dashboard-categories', monthYear],
-    queryFn: () => dashboardApi.getCategoryChart(monthYear),
+    queryKey: ['dashboard-categories', selectedMonth],
+    queryFn: () => dashboardApi.getCategoryChart(selectedMonth),
     staleTime: 0,
   })
   const { data: txRes } = useQuery({
@@ -83,6 +101,12 @@ export default function Dashboard() {
   const categoryData: CategoryChartData[] = categoryRes?.data?.data || []
   const allTx: Transaction[] = txRes?.data?.data || []
   const recentTx = allTx.slice(0, 5)
+
+  // Yearly totals derived from monthly chart data (already fetched for selectedYear)
+  const yearlyIncome = monthlyData.reduce((s, d) => s + (d.income ?? 0), 0)
+  const yearlyExpense = monthlyData.reduce((s, d) => s + (d.expense ?? 0), 0)
+  const yearlyNet = yearlyIncome - yearlyExpense
+  const yearlySavingsRate = yearlyIncome > 0 ? Math.round((yearlyNet / yearlyIncome) * 100) : 0
 
   const totalForPie = categoryData.reduce((s, d) => s + d.total, 0)
   const pieData = categoryData.map((d, i) => ({
@@ -101,9 +125,7 @@ export default function Dashboard() {
 
   const topCategories = [...categoryData].sort((a, b) => b.total - a.total).slice(0, 5)
 
-  const savingsRate = summary && summary.totalIncome > 0
-    ? Math.round((summary.netBalance / summary.totalIncome) * 100)
-    : 0
+  const savingsRate = yearlySavingsRate
 
   return (
     <div className="space-y-6 animate-fade-in">
@@ -115,10 +137,10 @@ export default function Dashboard() {
         </div>
       ) : (
         <div className="grid grid-cols-2 xl:grid-cols-4 gap-4">
-          <StatCard label="Total Income"   value={summary?.totalIncome ?? 0}   currency={currency} sub="This month"       bg="bg-gradient-to-br from-emerald-500 to-teal-600"   icon="💰" />
-          <StatCard label="Total Expenses" value={summary?.totalExpenses ?? 0} currency={currency} sub="This month"       bg="bg-gradient-to-br from-violet-500 to-indigo-600"  icon="🛒" />
-          <StatCard label="Net Balance"    value={summary?.netBalance ?? 0}    currency={currency} sub="Income − Expenses" bg="bg-gradient-to-br from-blue-500 to-cyan-600"      icon="📊" />
-          <StatCard label="Savings Rate"   value={`${savingsRate}%`}                               sub="Of income saved"  bg="bg-gradient-to-br from-orange-500 to-rose-500"    icon="🎯" />
+          <StatCard label="Total Income"   value={yearlyIncome}   currency={currency} sub={`Year ${selectedYear}`}       bg="bg-gradient-to-br from-emerald-500 to-teal-600"   icon="💰" />
+          <StatCard label="Total Expenses" value={yearlyExpense}  currency={currency} sub={`Year ${selectedYear}`}       bg="bg-gradient-to-br from-violet-500 to-indigo-600"  icon="🛒" />
+          <StatCard label="Net Balance"    value={yearlyNet}      currency={currency} sub="Income − Expenses"            bg="bg-gradient-to-br from-blue-500 to-cyan-600"      icon="📊" />
+          <StatCard label="Savings Rate"   value={`${savingsRate}%`}                  sub="Of income saved"              bg="bg-gradient-to-br from-orange-500 to-rose-500"    icon="🎯" />
         </div>
       )}
 
@@ -130,8 +152,15 @@ export default function Dashboard() {
           <div className="flex items-center justify-between mb-5">
             <div>
               <h2 className="text-[14px] font-bold text-gray-900 dark:text-white">Monthly Spending</h2>
-              <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5">Expenses across {year}</p>
+              <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5">Expenses across {selectedYear}</p>
             </div>
+            <select
+              value={selectedYear}
+              onChange={e => setSelectedYear(Number(e.target.value))}
+              className="min-w-[110px] text-[13px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700 rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer shadow-sm hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+            >
+              {YEAR_OPTIONS.map(y => <option key={y} value={y}>{y}</option>)}
+            </select>
           </div>
           {barData.every(d => d.Expense === 0) ? (
             <div className="h-56 flex flex-col items-center justify-center gap-3 text-gray-400">
@@ -160,8 +189,17 @@ export default function Dashboard() {
         {/* Donut Chart */}
         <div className="bg-white dark:bg-[#111827] rounded-2xl p-6 shadow-sm border border-gray-100 dark:border-gray-800 flex flex-col">
           <div className="mb-4">
-            <h2 className="text-[14px] font-bold text-gray-900 dark:text-white">Spending by Category</h2>
-            <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5">{formatMonthYear(monthYear)}</p>
+            <div className="flex items-center justify-between">
+              <h2 className="text-[14px] font-bold text-gray-900 dark:text-white">Spending by Category</h2>
+              <select
+                value={selectedMonth}
+                onChange={e => setSelectedMonth(e.target.value)}
+                className="min-w-[130px] text-[12px] font-semibold text-violet-700 dark:text-violet-300 bg-violet-50 dark:bg-violet-900/30 border border-violet-200 dark:border-violet-700 rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-violet-400 cursor-pointer shadow-sm hover:bg-violet-100 dark:hover:bg-violet-900/50 transition-colors"
+              >
+                {MONTH_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+              </select>
+            </div>
+            <p className="text-[12px] text-gray-400 dark:text-gray-500 mt-0.5">{formatMonthYear(selectedMonth)}</p>
           </div>
           {pieData.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center gap-3 text-gray-400 py-8">

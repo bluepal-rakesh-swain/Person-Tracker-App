@@ -134,7 +134,7 @@ export default function Categories() {
           {!isAdmin && (
             <button onClick={openCreate}
               className="bg-black text-white px-8 py-4 rounded-2xl text-[10px] font-black uppercase tracking-widest hover:bg-orange-500 transition-all shadow-xl active:scale-95 flex items-center gap-3">
-              <Plus size={16} /> Add New Node
+              <Plus size={16} /> Add New Category
             </button>
           )}
         </div>
