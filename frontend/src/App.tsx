@@ -20,6 +20,7 @@ import Budgets from '@/pages/Budgets'
 import ImportCsv from '@/pages/ImportCsv'
 import Export from '@/pages/Export'
 import AdminPanel from '@/pages/AdminPanel'
+import RecurringTransactions from '@/pages/RecurringTransactions'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -83,6 +84,7 @@ export default function App() {
                 <Route path="/budgets" element={<AdminGuard><Budgets /></AdminGuard>} />
                 <Route path="/import" element={<AdminGuard><ImportCsv /></AdminGuard>} />
                 <Route path="/export" element={<AdminGuard><Export /></AdminGuard>} />
+                <Route path="/recurring" element={<AdminGuard><RecurringTransactions /></AdminGuard>} />
                 <Route path="/admin" element={<AdminPanel />} />
               </Route>
             </Route>

@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, ArrowLeftRight, Tag, Target,
   LogOut, Menu, TrendingUp,
-  Users, BarChart3, Bell, Search, X, AlertTriangle
+  Users, BarChart3, Bell, Search, X, AlertTriangle, RefreshCw
 } from 'lucide-react'
 import { useAuth } from '@/contexts/AuthContext'
 import { cn } from '@/lib/utils'
@@ -64,6 +64,7 @@ const baseNavItems = [
   { to: '/categories',   icon: Tag,             label: 'categories' },
   { to: '/budgets',      icon: Target,          label: 'budgets' },
   { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
+  { to: '/recurring',    icon: RefreshCw,       label: 'Recurring' },
 ]
 
 export default function Layout() {

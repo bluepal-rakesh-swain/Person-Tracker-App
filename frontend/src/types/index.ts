@@ -82,6 +82,21 @@ export interface ImportResult {
   skipped: number
 }
 
+export interface RecurringTransaction {
+  id: number
+  categoryId: number
+  categoryName: string
+  categoryColor: string
+  amount: number
+  description: string
+  type: 'INCOME' | 'EXPENSE'
+  frequency: 'DAILY' | 'WEEKLY' | 'MONTHLY'
+  startDate: string
+  endDate: string | null
+  nextRunDate: string
+  active: boolean
+}
+
 export interface CsvColumnMapping {
   date: string
   desc: string

@@ -169,6 +169,14 @@ export const csvApi = {
   exportPdf: () => api.get('/export/pdf', { responseType: 'blob' }),
 }
 
+// ── Recurring Transactions ────────────────────────────────────────────────────
+export const recurringApi = {
+  getAll: () => api.get('/recurring'),
+  create: (data: Record<string, unknown>) => api.post('/recurring', data),
+  toggle: (id: number) => api.patch(`/recurring/${id}/toggle`),
+  delete: (id: number) => api.delete(`/recurring/${id}`),
+}
+
 // ── Admin ─────────────────────────────────────────────────────────────────────
 export const adminApi = {
   getUsers: () => api.get('/admin/users'),
