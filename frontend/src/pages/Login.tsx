@@ -58,15 +58,15 @@ export default function Login() {
         <div className="absolute inset-0 z-[1] bg-gradient-to-b from-black/60 via-black/20 to-black/80" />
 
         <div className="relative z-10 flex items-center gap-2">
-           <span className="text-white/80 text-xs tracking-[0.2em] font-bold uppercase drop-shadow-md">
+           {/* <span className="text-white/80 text-xs tracking-[0.2em] font-bold uppercase drop-shadow-md">
              Vault Institutional Access
-           </span>
+           </span> */}
         </div>
 
         <div className="relative z-10 space-y-6">
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white text-xs font-medium mb-2">
             <Sparkles size={12} className="text-orange-400" />
-            <span>AI-Driven Wealth Management</span>
+            {/* <span>AI-Driven Wealth Management</span> */}
           </div>
           <h2 className="text-7xl font-bold text-white leading-[1.1] tracking-tight drop-shadow-2xl">
             Manage <br /> 
@@ -82,9 +82,9 @@ export default function Login() {
               <div className="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-xl border border-white/20 flex items-center justify-center">
                 <Globe size={20} className="text-white" />
               </div>
-              <div className="text-[10px] text-white/60 uppercase tracking-[0.3em] font-bold">
+              {/* <div className="text-[10px] text-white/60 uppercase tracking-[0.3em] font-bold">
                 Global Financial <br /> Infrastructure
-              </div>
+              </div> */}
            </div>
         </div>
       </div>
