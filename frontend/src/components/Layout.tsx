@@ -65,6 +65,7 @@ const baseNavItems = [
   { to: '/budgets',      icon: Target,          label: 'budgets' },
   { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
   { to: '/recurring',    icon: RefreshCw,       label: 'Recurring' },
+  { to: '/audit',        icon: AlertTriangle,   label: 'audit logs' },
 ]
 export default function Layout() {
   const { user, logout, accessToken } = useAuth()

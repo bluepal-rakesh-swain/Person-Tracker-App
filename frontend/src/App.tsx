@@ -17,6 +17,7 @@ import Dashboard from '@/pages/Dashboard'
 import Transactions from '@/pages/Transactions'
 import Categories from '@/pages/Categories'
 import Budgets from '@/pages/Budgets'
+import Audit from '@/pages/Audit'
 import ImportCsv from '@/pages/ImportCsv'
 import Export from '@/pages/Export'
 import AdminPanel from '@/pages/AdminPanel'
@@ -85,6 +86,7 @@ export default function App() {
                 <Route path="/import" element={<AdminGuard><ImportCsv /></AdminGuard>} />
                 <Route path="/export" element={<AdminGuard><Export /></AdminGuard>} />
                 <Route path="/recurring" element={<AdminGuard><RecurringTransactions /></AdminGuard>} />
+                <Route path="/audit" element={<AdminGuard><Audit /></AdminGuard>} />
                 <Route path="/admin" element={<AdminPanel />} />
               </Route>
             </Route>

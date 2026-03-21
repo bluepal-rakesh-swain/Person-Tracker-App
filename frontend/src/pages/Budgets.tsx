@@ -28,10 +28,19 @@ const schema = z.object({
 })
 type FormData = z.infer<typeof schema>
 
+type AuditLog = {
+  id: string
+  timestamp: string
+  action: string
+  detail?: string
+}
+
 function BudgetCard({ budget, currency }: { budget: Budget; currency: string }) {
   const pct = Math.min(budget.usagePercent, 100)
   const isOver = budget.usagePercent > 100
   const isNear = budget.usagePercent >= 80 && !isOver
+  const categoryName = budget.categoryName || 'Uncategorized'
+  const categoryInitial = categoryName.charAt(0).toUpperCase()
 
   return (
     <motion.div layout
@@ -44,10 +53,10 @@ function BudgetCard({ budget, currency }: { budget: Budget; currency: string }) 
         <div className="flex items-center gap-4">
           <div className="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-xl font-black shadow-lg shadow-black/5"
             style={{ background: budget.categoryColor || '#f97316' }}>
-            {budget.categoryName.charAt(0)}
+            {categoryInitial}
           </div>
           <div>
-            <h3 className="font-[1000] text-lg text-black uppercase tracking-tighter leading-tight">{budget.categoryName}</h3>
+            <h3 className="font-[1000] text-lg text-black uppercase tracking-tighter leading-tight">{categoryName}</h3>
             <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mt-1">Classification Node</p>
           </div>
         </div>
@@ -107,6 +116,42 @@ export default function Budgets() {
   const [selectedMonth, setSelectedMonth] = useState(currentMonthYear())
   const [searchParams] = useSearchParams()
   const [search, setSearch] = useState(searchParams.get('search') || '')
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([])
+
+  const AUDIT_LOG_KEY = 'budgets.audit.logs'
+
+  const loadAuditLogs = (): AuditLog[] => {
+    try {
+      const saved = localStorage.getItem(AUDIT_LOG_KEY)
+      if (!saved) return []
+      const parsed = JSON.parse(saved) as AuditLog[]
+      return Array.isArray(parsed) ? parsed : []
+    } catch {
+      return []
+    }
+  }
+
+  const persistAuditLogs = (logs: AuditLog[]) => {
+    localStorage.setItem(AUDIT_LOG_KEY, JSON.stringify(logs))
+  }
+
+  const addAuditLog = (action: string, detail?: string) => {
+    const entry: AuditLog = {
+      id: crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}-${Math.random()}`,
+      timestamp: new Date().toLocaleString(),
+      action,
+      detail,
+    }
+    setAuditLogs((prev) => {
+      const next = [entry, ...prev].slice(0, 50)
+      persistAuditLogs(next)
+      return next
+    })
+  }
+
+  useEffect(() => {
+    setAuditLogs(loadAuditLogs())
+  }, [])
 
   useEffect(() => {
     setSearch(searchParams.get('search') || '')
@@ -122,8 +167,10 @@ export default function Budgets() {
       a.click()
       URL.revokeObjectURL(url)
       show('Budgets exported as CSV')
+      addAuditLog('Export CSV', `Exported budgets CSV for ${selectedMonth}`)
     } catch {
       show('CSV export failed', 'error')
+      addAuditLog('Export CSV Failed', `Could not export budgets CSV for ${selectedMonth}`)
     }
   }
 
@@ -137,8 +184,10 @@ export default function Budgets() {
       a.click()
       URL.revokeObjectURL(url)
       show('Budgets exported as PDF')
+      addAuditLog('Export PDF', `Exported budgets PDF for ${selectedMonth}`)
     } catch {
       show('PDF export failed', 'error')
+      addAuditLog('Export PDF Failed', `Could not export budgets PDF for ${selectedMonth}`)
     }
   }
 
@@ -159,7 +208,7 @@ export default function Budgets() {
   })
   const allBudgets: Budget[] = (budgetRes?.data?.data || []).filter((b: Budget) => b.monthYear === selectedMonth)
   const budgets = search
-    ? allBudgets.filter(b => b.categoryName.toLowerCase().includes(search.toLowerCase()))
+    ? allBudgets.filter(b => (b.categoryName || '').toLowerCase().includes(search.toLowerCase()))
     : allBudgets
 
   const { data: catRes } = useQuery({
@@ -175,10 +224,11 @@ export default function Budgets() {
 
   const saveMutation = useMutation({
     mutationFn: (data: FormData) => budgetApi.upsert({ ...data, limitAmount: data.limitAmount * 100 }),
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
       qc.invalidateQueries({ queryKey: ['budgets'] })
       setShowModal(false)
       show('Budget parameters updated')
+      addAuditLog('Budget Upsert', `Category ${variables.categoryId}, month ${variables.monthYear}, limit ${variables.limitAmount} ${currency}`)
     },
   })
 
@@ -240,24 +290,34 @@ export default function Budgets() {
         )}
       </div>
 
-      {/* ── SUMMARY DASHBOARD ── */}
-      {budgets.length > 0 && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {[
-            { label: 'Cumulative Limit', value: formatMoney(totalBudget, currency), icon: <Target size={14}/>, color: 'text-black' },
-            { label: 'Utilized Capital', value: formatMoney(totalSpent, currency), icon: <Activity size={14}/>, color: 'text-orange-500' },
-            { label: 'Integrity Alerts', value: `${overBudget} Violations`, icon: <AlertTriangle size={14}/>, color: overBudget > 0 ? 'text-red-500' : 'text-emerald-500' },
-          ].map(({ label, value, color, icon }) => (
-            <div key={label} className="bg-white rounded-[2rem] p-8 border border-slate-100 shadow-[0_15px_40px_rgba(0,0,0,0.03)] flex flex-col justify-between h-32">
-              <div className="flex items-center justify-between">
-                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest">{label}</p>
-                 <div className="text-slate-300">{icon}</div>
-              </div>
-              <p className={cn("text-2xl font-[1000] font-mono tracking-tighter uppercase", color)}>{value}</p>
-            </div>
-          ))}
+      {/* ── AUDIT LOGS ── */}
+      <div className="bg-white rounded-2xl p-6 border border-slate-100 shadow-sm">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-[1000] uppercase tracking-widest text-black">Audit Log</h2>
+          <button
+            onClick={() => {
+              setAuditLogs([])
+              persistAuditLogs([])
+            }}
+            className="text-[10px] font-black uppercase tracking-widest text-orange-500 hover:text-orange-700"
+          >
+            Clear logs
+          </button>
         </div>
-      )}
+        {auditLogs.length === 0 ? (
+          <p className="text-[10px] text-slate-500 uppercase tracking-wide">No audit entries yet.</p>
+        ) : (
+          <ul className="space-y-2 max-h-44 overflow-y-auto"> 
+            {auditLogs.map((entry) => (
+              <li key={entry.id} className="rounded-xl bg-slate-50 p-3 border border-slate-100">
+                <p className="text-[10px] font-black text-slate-600 uppercase tracking-wider">{entry.action}</p>
+                <p className="text-[9px] text-slate-500 truncate">{entry.detail}</p>
+                <p className="text-[8px] text-slate-400 uppercase tracking-widest mt-1">{entry.timestamp}</p>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
 
       {/* ── MAIN CONTENT ── */}
       {isLoading ? (
