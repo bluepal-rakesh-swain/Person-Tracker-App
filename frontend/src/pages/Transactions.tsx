@@ -202,7 +202,7 @@ export default function Transactions() {
       <div className="flex flex-col lg:flex-row lg:items-end justify-between gap-6">
         <div>
           <h1 className="text-4xl font-[1000] text-black tracking-tighter uppercase leading-none">
-            Financial <span className="text-orange-500">Ledger</span>
+            Financial <span className="text-orange-500">Trasactions</span>
           </h1>
           <p className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em] mt-3">
             {totalElements} Active Records &bull; Protocol SEC-206

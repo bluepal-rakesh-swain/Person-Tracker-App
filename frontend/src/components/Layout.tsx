@@ -66,7 +66,6 @@ const baseNavItems = [
   { to: '/transactions', icon: ArrowLeftRight,  label: 'transactions' },
   { to: '/recurring',    icon: RefreshCw,       label: 'Recurring' },
 ]
-
 export default function Layout() {
   const { user, logout, accessToken } = useAuth()
   const navigate = useNavigate()
@@ -122,7 +121,7 @@ export default function Layout() {
           {!isCollapsed && (
             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
               <p className="font-[1000] text-xl tracking-tighter text-white uppercase leading-none">
-                SYS<span className="text-orange-500">TEM</span>
+                TRA<span className="text-orange-500">CKER</span>
               </p>
             </motion.div>
           )}
@@ -168,9 +167,9 @@ export default function Layout() {
           {/* Admin Tools */}
           {isAdmin && (
             <div className="pt-8 space-y-3">
-              {!isCollapsed && <p className="px-4 text-[9px] font-black text-slate-700 uppercase tracking-[0.4em] mb-4">Network</p>}
+              {!isCollapsed && <p className="px-4 text-[9px] font-black text-slate-700 uppercase tracking-[0.4em] mb-4"></p>}
               {[
-                { tab: 'users', label: 'Nodes', icon: Users },
+                { tab: 'users', label: 'Users', icon: Users },
                 { tab: 'stats', label: 'Data', icon: BarChart3 },
               ].map(({ tab: itemTab, label, icon: Icon }) => {
                 const isActive = location.pathname === '/admin' && currentTab === itemTab
@@ -276,7 +275,7 @@ export default function Layout() {
                 {user?.fullName?.charAt(0).toUpperCase()}
               </div>
               <span className="text-[10px] font-[1000] text-black uppercase tracking-widest hidden sm:block">
-                Operator
+                Profile
               </span>
             </button>
           </div>

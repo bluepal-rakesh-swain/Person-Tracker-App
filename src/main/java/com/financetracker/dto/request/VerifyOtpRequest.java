@@ -8,7 +8,8 @@ import lombok.Data;
 @Data
 public class VerifyOtpRequest {
 
-    @Email @NotBlank
+	@Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
     private String email;
 
     @NotBlank @Size(min = 6, max = 6, message = "OTP must be 6 digits")

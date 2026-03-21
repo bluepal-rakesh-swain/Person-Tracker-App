@@ -121,10 +121,10 @@ export default function AdminPanel() {
         <div>
           {/* SYSTEM NAME IN SOLID BLACK */}
           <h1 className="text-[32px] font-[1000] tracking-tighter text-black uppercase leading-tight">
-            System <span className="text-orange-600">Command</span>
+            FINANCE <span className="text-orange-600">DASHBOARD</span>
           </h1>
           <p className="mt-1 text-[12px] font-black text-slate-500 uppercase tracking-[0.3em]">
-            Central Intelligence Terminal
+            CENTRAL FINANCE TERMINAL
           </p>
         </div>
 

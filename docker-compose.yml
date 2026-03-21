@@ -35,5 +35,14 @@ services:
         condition: service_healthy
     restart: on-failure
 
+  frontend:
+    build: ./frontend
+    container_name: finance_frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - app
+    restart: on-failure
+
 volumes:
   postgres_data:
